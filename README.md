@@ -669,7 +669,7 @@ Meet the brilliant minds behind Smart Attendance Management System:
 | **Diya Sahu** | 2024UGCS013 | Frontend Development | React Components, UI Design, Student Panel |
 | **Ruchika Sinha** | 2024UGCS062 | Database Design & DevOps | MongoDB Schema, Docker Configuration, Deployment |
 | **Utkarsh Singh** | 2024UGCS059 | Full-Stack Development | Teacher Panel, Real-time Features, WebSockets |
-| **Krrish Kumar** | 2024UGCS050 | Project Lead & Admin Panel | Architecture Design, Admin Features, Documentation |
+| **Krrish Kumar** | 2024UGCS050 | Admin Panel | Architecture Design, Admin Features, Documentation |
 
 ### Team Responsibilities
 
@@ -697,7 +697,7 @@ Meet the brilliant minds behind Smart Attendance Management System:
 - Session management
 - Analytics integration
 
-**Project Leadership (Krrish Kumar)**
+**Full-Stack Developement (Krrish Kumar)**
 - Overall architecture design
 - Admin panel features
 - Documentation & README
