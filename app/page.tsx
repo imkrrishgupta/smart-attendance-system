@@ -1,228 +1,273 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import Link from 'next/link';
+import { ArrowRight, Shield, Users, BarChart3, CheckCircle, Menu, X } from 'lucide-react';
 
-export default function Home() {
-  const router = useRouter();
-  const [mounted, setMounted] = useState(false);
+type FeatureColor = 'indigo' | 'green' | 'blue';
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+type Feature = {
+  title: string;
+  description: string;
+  icon: React.ElementType;
+  color: FeatureColor;
+  route: string;
+  benefits: string[];
+};
 
-  const roles = [
+type Technology = {
+  name: string;
+  category: string;
+};
+
+export default function HomePage() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
+
+  const features: Feature[] = [
     {
-      title: 'Student',
-      description: 'Mark attendance with face recognition',
-      icon: '🎓',
-      path: '/student/login',
-      gradient: 'linear-gradient(135deg, #00f0ff 0%, #0ea5e9 100%)',
-      delay: '0s'
+      title: 'Admin Panel',
+      description: 'Complete control over system management, user administration, and attendance analytics.',
+      icon: Shield,
+      color: 'indigo',
+      route: '/admin/dashboard',
+      benefits: [
+        'Manage teachers & students',
+        'Create timetables',
+        'Real-time monitoring',
+        'Analytics & reports'
+      ]
     },
     {
-      title: 'Teacher',
-      description: 'Manage attendance sessions & students',
-      icon: '👨‍🏫',
-      path: '/teacher/dashboard',
-      gradient: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
-      delay: '0.1s'
+      title: 'Teacher Panel',
+      description: 'Streamlined attendance session management with automated verification.',
+      icon: Users,
+      color: 'green',
+      route: '/teacher/dashboard',
+      benefits: [
+        'Start/end sessions',
+        'Monitor live attendance',
+        'Resolve exceptions',
+        'Submit leave requests'
+      ]
     },
     {
-      title: 'Admin',
-      description: 'System management & analytics',
-      icon: '⚙️',
-      path: '/admin/dashboard',
-      gradient: 'linear-gradient(135deg, #ec4899 0%, #f43f5e 100%)',
-      delay: '0.2s'
+      title: 'Student Panel',
+      description: 'Simple and secure attendance marking with transparent tracking.',
+      icon: BarChart3,
+      color: 'blue',
+      route: '/student/dashboard',
+      benefits: [
+        'Face authentication',
+        'Location verification',
+        'View attendance status',
+        'Raise issues'
+      ]
     }
   ];
 
+  const technologies: Technology[] = [
+    { name: 'Next.js', category: 'Frontend' },
+    { name: 'Node.js', category: 'Backend' },
+    { name: 'MongoDB', category: 'Database' },
+    { name: 'TensorFlow', category: 'ML Engine' }
+  ];
+
+  const colorClasses: Record<FeatureColor, { bg: string; hover: string; text: string }> = {
+    indigo: {
+      bg: 'bg-indigo-600',
+      hover: 'hover:border-indigo-600',
+      text: 'text-indigo-600'
+    },
+    green: {
+      bg: 'bg-green-600',
+      hover: 'hover:border-green-600',
+      text: 'text-green-600'
+    },
+    blue: {
+      bg: 'bg-blue-600',
+      hover: 'hover:border-blue-600',
+      text: 'text-blue-600'
+    }
+  };
+
   return (
-    <main className="min-h-screen flex items-center justify-center p-4">
-      <div className="container max-w-6xl">
-        {/* Header Section */}
-        <div className="text-center mb-16 fade-in">
-          <div className="inline-flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#00f0ff] to-[#7c3aed] flex items-center justify-center text-2xl">
-              🎯
+    <div className="min-h-screen bg-slate-50">
+      <nav className="bg-white border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
+                <Shield className="w-6 h-6 text-white" />
+              </div>
+              <span className="text-xl font-bold text-slate-900">Smart Attendance</span>
             </div>
-            <span className="text-sm font-semibold tracking-wider text-[#00f0ff] uppercase">
-              Next-Gen Attendance
-            </span>
-          </div>
-          
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-            Smart Attendance
-            <br />
-            <span className="bg-gradient-to-r from-[#00f0ff] via-[#7c3aed] to-[#ec4899] bg-clip-text text-transparent">
-              System
-            </span>
-          </h1>
-          
-          <p className="text-xl text-[#a1a1b5] max-w-2xl mx-auto leading-relaxed">
-            AI-powered face recognition with geo-fencing technology for 
-            <span className="text-white font-semibold"> seamless </span>
-            and 
-            <span className="text-white font-semibold"> secure </span>
-            attendance management
-          </p>
-        </div>
 
-        {/* Role Selection Cards */}
-        <div className="grid md:grid-cols-3 gap-6 mb-12">
-          {roles.map((role, index) => (
-            <div
-              key={role.title}
-              className="role-card"
-              style={{
-                animationDelay: mounted ? role.delay : '0s',
-                opacity: mounted ? 1 : 0
-              }}
-              onClick={() => router.push(role.path)}
+            <div className="hidden md:block">
+              <Link
+                href="/login"
+                className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+              >
+                Login
+              </Link>
+            </div>
+
+            <button
+              className="md:hidden"
+              onClick={() => setMobileMenuOpen(prev => !prev)}
             >
-              <div className="relative p-8 h-full">
-                {/* Glow Effect */}
-                <div 
-                  className="absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-                  style={{
-                    background: role.gradient,
-                    filter: 'blur(20px)',
-                    zIndex: -1
-                  }}
-                />
-                
-                {/* Card Content */}
-                <div className="relative z-10">
-                  <div className="text-6xl mb-6 transform transition-transform duration-300 group-hover:scale-110">
-                    {role.icon}
-                  </div>
-                  
-                  <h3 className="text-2xl font-bold mb-3 text-white">
-                    {role.title}
-                  </h3>
-                  
-                  <p className="text-[#a1a1b5] mb-6 leading-relaxed">
-                    {role.description}
-                  </p>
-                  
-                  <div className="flex items-center text-[#00f0ff] font-semibold group-hover:translate-x-2 transition-transform duration-300">
-                    Access Portal
-                    <svg 
-                      className="w-5 h-5 ml-2" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                    >
-                      <path 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
-                        strokeWidth={2} 
-                        d="M17 8l4 4m0 0l-4 4m4-4H3" 
-                      />
-                    </svg>
-                  </div>
-                </div>
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
 
-                {/* Top Border Gradient */}
-                <div 
-                  className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                  style={{ background: role.gradient }}
-                />
+          {mobileMenuOpen && (
+            <div className="mt-4 md:hidden">
+              <Link
+                href="/login"
+                className="block w-full px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors text-center"
+              >
+                Login
+              </Link>
+            </div>
+          )}
+        </div>
+      </nav>
+
+      <section className="pt-20 pb-24 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <div className="inline-block px-4 py-2 bg-indigo-100 text-indigo-700 rounded-full text-sm font-semibold mb-6">
+                Next-Gen Attendance System
+              </div>
+              <h1 className="text-5xl font-bold text-slate-900 mb-6 leading-tight">
+                Secure Attendance with Face Recognition & Geo-Fencing
+              </h1>
+              <p className="text-xl text-slate-600 mb-8 leading-relaxed">
+                Eliminate proxy attendance and streamline classroom management with our AI-powered attendance system.
+                Verified identity, real-time tracking, and comprehensive analytics.
+              </p>
+              <div className="flex flex-wrap gap-4">
+                <Link
+                  href="/login"
+                  className="px-8 py-4 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors flex items-center gap-2 text-lg"
+                >
+                  Get Started
+                  <ArrowRight className="w-5 h-5" />
+                </Link>
+                <button className="px-8 py-4 bg-white text-slate-700 rounded-lg font-semibold border-2 border-slate-300 hover:border-slate-400 transition-colors text-lg">
+                  Learn More
+                </button>
               </div>
             </div>
-          ))}
-        </div>
 
-        {/* Features Section */}
-        <div className="grid md:grid-cols-4 gap-4 fade-in" style={{ animationDelay: '0.3s' }}>
-          {[
-            { icon: '🤖', text: 'AI Recognition' },
-            { icon: '📍', text: 'Geo-Fencing' },
-            { icon: '📊', text: 'Real-time Analytics' },
-            { icon: '🔒', text: 'Secure & Private' }
-          ].map((feature, index) => (
-            <div 
-              key={index}
-              className="bg-[#1e1e2e] border border-[rgba(255,255,255,0.1)] rounded-xl p-6 text-center hover:border-[rgba(0,240,255,0.3)] transition-all duration-300 hover:-translate-y-1"
-            >
-              <div className="text-3xl mb-3">{feature.icon}</div>
-              <div className="text-sm font-semibold text-[#a1a1b5]">{feature.text}</div>
+            <div className="bg-white rounded-2xl p-8 shadow-xl border border-slate-200">
+              <div className="aspect-square bg-slate-100 rounded-xl flex items-center justify-center mb-6">
+                <div className="text-center">
+                  <div className="w-32 h-32 bg-indigo-600 rounded-full mx-auto mb-4 flex items-center justify-center">
+                    <Shield className="w-16 h-16 text-white" />
+                  </div>
+                  <p className="text-slate-600 font-medium">ML-Powered Authentication</p>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 text-slate-700">
+                  <CheckCircle className="w-5 h-5 text-green-600 shrink-0" />
+                  <span>Face Recognition Verification</span>
+                </div>
+                <div className="flex items-center gap-3 text-slate-700">
+                  <CheckCircle className="w-5 h-5 text-green-600 shrink-0" />
+                  <span>GPS-Based Geo-Fencing</span>
+                </div>
+                <div className="flex items-center gap-3 text-slate-700">
+                  <CheckCircle className="w-5 h-5 text-green-600 shrink-0" />
+                  <span>Role-Based Access Control</span>
+                </div>
+              </div>
             </div>
-          ))}
+          </div>
         </div>
+      </section>
 
-        {/* Footer */}
-        <div className="text-center mt-16 text-[#6b6b7f] text-sm fade-in" style={{ animationDelay: '0.4s' }}>
-          <p>Powered by Advanced Face Recognition & Machine Learning</p>
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-slate-900 mb-4">
+              Three Powerful Panels
+            </h2>
+            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+              Role-based dashboards designed for administrators, teachers, and students
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {features.map((feature, index) => {
+              const Icon = feature.icon;
+              const colors = colorClasses[feature.color];
+
+              return (
+                <Link
+                  key={index}
+                  href={feature.route}
+                  className={`block bg-slate-50 rounded-xl p-8 border-2 border-slate-200 ${colors.hover} transition-colors cursor-pointer`}
+                >
+                  <div className={`w-14 h-14 ${colors.bg} rounded-xl flex items-center justify-center mb-6`}>
+                    <Icon className="w-7 h-7 text-white" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-slate-900 mb-4">{feature.title}</h3>
+                  <p className="text-slate-600 mb-6">{feature.description}</p>
+                  <ul className="space-y-3 text-slate-700">
+                    {feature.benefits.map((benefit, idx) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        <CheckCircle className={`w-5 h-5 ${colors.text} shrink-0 mt-0.5`} />
+                        <span>{benefit}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </Link>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      </section>
 
-      <style jsx>{`
-        .role-card {
-          background: rgba(30, 30, 46, 0.8);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 1.5rem;
-          cursor: pointer;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          position: relative;
-          overflow: hidden;
-          backdrop-filter: blur(10px);
-          animation: fadeIn 0.5s ease-out forwards;
-          opacity: 0;
-        }
+      <section className="py-20 bg-slate-900">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-white mb-4">
+              Powered by Advanced Technology
+            </h2>
+            <p className="text-xl text-slate-400 max-w-2xl mx-auto">
+              Built with cutting-edge machine learning and modern web technologies
+            </p>
+          </div>
 
-        .role-card::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          border-radius: 1.5rem;
-          padding: 1px;
-          background: linear-gradient(135deg, rgba(0, 240, 255, 0.3), rgba(124, 58, 237, 0.3));
-          -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-          -webkit-mask-composite: xor;
-          mask-composite: exclude;
-          opacity: 0;
-          transition: opacity 0.3s;
-        }
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {technologies.map((tech, index) => (
+              <div
+                key={index}
+                className="bg-slate-800 rounded-xl p-6 text-center border border-slate-700"
+              >
+                <div className="text-3xl font-bold text-white mb-2">{tech.name}</div>
+                <div className="text-slate-400">{tech.category}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-        .role-card:hover {
-          transform: translateY(-8px);
-          border-color: rgba(0, 240, 255, 0.3);
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-        }
-
-        .role-card:hover::before {
-          opacity: 1;
-        }
-
-        .group:hover .group-hover\\:scale-110 {
-          transform: scale(1.1);
-        }
-
-        .group:hover .group-hover\\:translate-x-2 {
-          transform: translateX(0.5rem);
-        }
-
-        .group:hover .group-hover\\:opacity-100 {
-          opacity: 1;
-        }
-
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .fade-in {
-          animation: fadeIn 0.5s ease-out;
-        }
-      `}</style>
-    </main>
+      <footer className="bg-white border-t border-slate-200 py-12">
+        <div className="max-w-7xl mx-auto px-6 text-center">
+          <div className="flex items-center justify-center space-x-3 mb-4">
+            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+              <Shield className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-lg font-bold text-slate-900">Smart Attendance System</span>
+          </div>
+          <p className="text-slate-600">
+            © 2025 Smart Attendance Management System. All rights reserved.
+          </p>
+        </div>
+      </footer>
+    </div>
   );
 }
