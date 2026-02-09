@@ -8,16 +8,18 @@ import { User } from '@/models/User';
  *  - name
  *  - email
  *  - password
+ *  - department
+ *  - employeeId
  */
 export async function POST(request: Request) {
   await dbConnect();
 
   const body = await request.json();
-  const { name, email, password } = body;
+  const { name, email, password, department, employeeId } = body;
 
-  if (!name || !email || !password) {
+  if (!name || !email || !password || !department || !employeeId) {
     return NextResponse.json(
-      { error: 'name, email and password are required' },
+      { error: 'All fields are required' },
       { status: 400 }
     );
   }
@@ -34,7 +36,10 @@ export async function POST(request: Request) {
     name,
     email,
     password,
-    role: 'teacher'
+    role: 'teacher',
+    department,
+    employeeId,
+    isActive: true
   });
 
   return NextResponse.json(
@@ -42,7 +47,9 @@ export async function POST(request: Request) {
       id: teacher._id,
       name: teacher.name,
       email: teacher.email,
-      role: teacher.role
+      role: teacher.role,
+      department: teacher.department,
+      employeeId: teacher.employeeId
     },
     { status: 201 }
   );
