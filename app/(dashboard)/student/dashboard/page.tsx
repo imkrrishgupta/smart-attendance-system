@@ -423,13 +423,13 @@ export default function StudentDashboard() {
                 <h2 className="text-xl font-bold text-slate-900">Quick Actions</h2>
               </div>
               <div className="p-6 space-y-3">
-                <button 
-                  onClick={() => alert('Timetable view would open here')}
+                <a 
+                  href="/student/timetable"
                   className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-3"
                 >
                   <Calendar className="w-5 h-5" />
                   View Timetable
-                </button>
+                </a>
                 <button 
                   onClick={() => alert('Raise issue form would open here')}
                   className="w-full px-4 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center gap-3"
