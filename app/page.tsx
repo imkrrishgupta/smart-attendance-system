@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useSession, signOut } from 'next-auth/react';
 import { ArrowRight, Shield, Users, BarChart3, CheckCircle, Menu, X } from 'lucide-react';
 
 type FeatureColor = 'indigo' | 'green' | 'blue';
@@ -22,6 +23,14 @@ type Technology = {
 
 export default function HomePage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
+  const { data: session } = useSession();
+
+  const dashboardRoute =
+    session?.user.role === 'admin'
+      ? '/admin/dashboard'
+      : session?.user.role === 'teacher'
+      ? '/teacher/dashboard'
+      : '/student/dashboard';
 
   const features: Feature[] = [
     {
@@ -102,13 +111,42 @@ export default function HomePage() {
               <span className="text-xl font-bold text-slate-900">Smart Attendance</span>
             </div>
 
-            <div className="hidden md:block">
-              <Link
-                href="/login"
-                className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
-              >
-                Login
-              </Link>
+            <div className="hidden md:flex items-center gap-3">
+              {!session && (
+                <>
+                  <Link
+                    href="/login"
+                    className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+                  >
+                    Login
+                  </Link>
+
+                  <Link
+                    href="/register"
+                    className="px-6 py-2.5 border border-indigo-600 text-indigo-600 rounded-lg font-medium hover:bg-indigo-50 transition-colors"
+                  >
+                    Signup
+                  </Link>
+                </>
+              )}
+
+              {session && (
+                <>
+                  <Link
+                    href={dashboardRoute}
+                    className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+                  >
+                    Dashboard
+                  </Link>
+
+                  <button
+                    onClick={() => signOut()}
+                    className="px-6 py-2.5 border border-red-600 text-red-600 rounded-lg font-medium hover:bg-red-50 transition-colors"
+                  >
+                    Logout
+                  </button>
+                </>
+              )}
             </div>
 
             <button
@@ -120,13 +158,40 @@ export default function HomePage() {
           </div>
 
           {mobileMenuOpen && (
-            <div className="mt-4 md:hidden">
-              <Link
-                href="/login"
-                className="block w-full px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors text-center"
-              >
-                Login
-              </Link>
+            <div className="mt-4 md:hidden space-y-2">
+              {!session && (
+                <>
+                  <Link
+                    href="/login"
+                    className="block w-full px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-medium text-center"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="block w-full px-6 py-2.5 border border-indigo-600 text-indigo-600 rounded-lg font-medium text-center"
+                  >
+                    Signup
+                  </Link>
+                </>
+              )}
+
+              {session && (
+                <>
+                  <Link
+                    href={dashboardRoute}
+                    className="block w-full px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-medium text-center"
+                  >
+                    Dashboard
+                  </Link>
+                  <button
+                    onClick={() => signOut()}
+                    className="block w-full px-6 py-2.5 border border-red-600 text-red-600 rounded-lg font-medium"
+                  >
+                    Logout
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -146,18 +211,26 @@ export default function HomePage() {
                 Eliminate proxy attendance and streamline classroom management with our AI-powered attendance system.
                 Verified identity, real-time tracking, and comprehensive analytics.
               </p>
-              <div className="flex flex-wrap gap-4">
+
+              {!session && (
                 <Link
                   href="/login"
-                  className="px-8 py-4 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors flex items-center gap-2 text-lg"
+                  className="px-8 py-4 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors inline-flex items-center gap-2 text-lg"
                 >
                   Get Started
                   <ArrowRight className="w-5 h-5" />
                 </Link>
-                <button className="px-8 py-4 bg-white text-slate-700 rounded-lg font-semibold border-2 border-slate-300 hover:border-slate-400 transition-colors text-lg">
-                  Learn More
-                </button>
-              </div>
+              )}
+
+              {session && (
+                <Link
+                  href={dashboardRoute}
+                  className="px-8 py-4 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors inline-flex items-center gap-2 text-lg"
+                >
+                  Go to Dashboard
+                  <ArrowRight className="w-5 h-5" />
+                </Link>
+              )}
             </div>
 
             <div className="bg-white rounded-2xl p-8 shadow-xl border border-slate-200">
@@ -187,87 +260,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-slate-900 mb-4">
-              Three Powerful Panels
-            </h2>
-            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-              Role-based dashboards designed for administrators, teachers, and students
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {features.map((feature, index) => {
-              const Icon = feature.icon;
-              const colors = colorClasses[feature.color];
-
-              return (
-                <Link
-                  key={index}
-                  href={feature.route}
-                  className={`block bg-slate-50 rounded-xl p-8 border-2 border-slate-200 ${colors.hover} transition-colors cursor-pointer`}
-                >
-                  <div className={`w-14 h-14 ${colors.bg} rounded-xl flex items-center justify-center mb-6`}>
-                    <Icon className="w-7 h-7 text-white" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-slate-900 mb-4">{feature.title}</h3>
-                  <p className="text-slate-600 mb-6">{feature.description}</p>
-                  <ul className="space-y-3 text-slate-700">
-                    {feature.benefits.map((benefit, idx) => (
-                      <li key={idx} className="flex items-start gap-2">
-                        <CheckCircle className={`w-5 h-5 ${colors.text} shrink-0 mt-0.5`} />
-                        <span>{benefit}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      <section className="py-20 bg-slate-900">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-white mb-4">
-              Powered by Advanced Technology
-            </h2>
-            <p className="text-xl text-slate-400 max-w-2xl mx-auto">
-              Built with cutting-edge machine learning and modern web technologies
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {technologies.map((tech, index) => (
-              <div
-                key={index}
-                className="bg-slate-800 rounded-xl p-6 text-center border border-slate-700"
-              >
-                <div className="text-3xl font-bold text-white mb-2">{tech.name}</div>
-                <div className="text-slate-400">{tech.category}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <footer className="bg-white border-t border-slate-200 py-12">
-        <div className="max-w-7xl mx-auto px-6 text-center">
-          <div className="flex items-center justify-center space-x-3 mb-4">
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-              <Shield className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-lg font-bold text-slate-900">Smart Attendance System</span>
-          </div>
-          <p className="text-slate-600">
-            © 2025 Smart Attendance Management System. All rights reserved.
-          </p>
-        </div>
-      </footer>
     </div>
   );
 }
