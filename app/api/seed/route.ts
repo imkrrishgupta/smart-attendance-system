@@ -12,13 +12,13 @@ export async function POST() {
     return NextResponse.json({ message: 'Admin already exists' }, { status: 200 });
   }
 
-  const hashed = await bcrypt.hash('admin123', 10);
+  const hashedPassword = await bcrypt.hash(process.env.SEEDER_ADMIN_PASS!, 10);
 
   const admin = await User.create({
-    name: 'Super Admin',
-    email: 'admin@smart.com',
-    password: hashed,
-    role: 'admin'
+    name: process.env.SEEDER_ADMIN_NAME,
+    email: process.env.SEEDER_ADMIN_EMAIL,
+    password: hashedPassword,
+    role: process.env.SEEDER_ADMIN_ROLE
   });
 
   return NextResponse.json(
