@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import axios from "axios";
 
 export default function MarkAttendance({
   sessionId,
@@ -17,22 +18,21 @@ export default function MarkAttendance({
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         try {
-          const res = await fetch("/api/attendance/mark", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              sessionId,
-              studentId,
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-              accuracy: position.coords.accuracy,
-            }),
+          const res = await axios.post("/api/attendance/mark", {
+            sessionId,
+            studentId,
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy,
           });
 
-          const data = await res.json();
-          alert(data.message);
-        } catch (err) {
-          alert("Something went wrong");
+          alert(res.data.message);
+        } catch (error: any) {
+          if (error.response) {
+            alert(error.response.data?.error || "Attendance failed");
+          } else {
+            alert("Something went wrong");
+          }
         } finally {
           setLoading(false);
         }
@@ -44,7 +44,7 @@ export default function MarkAttendance({
       {
         enableHighAccuracy: true,
         timeout: 10000,
-      }
+      },
     );
   };
 

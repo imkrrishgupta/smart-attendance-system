@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import axios from "axios";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -16,24 +17,29 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
+    
+    try {
+      const res = await axios.post("/api/auth/register", {
+        name,
+        email,
+        password,
+        role
+      });
 
-    const res = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password, role })
-    });
+      router.push("/login");
+      router.refresh();
 
-    setLoading(false);
-
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.error || 'Registration failed');
-      return;
+    } catch (error: any) {
+        if (error.response) {
+          setError(error.response.data?.error || "Registration failed");
+        } else {
+            setError("Something went wrong. Please try again.");
+        }
+    } finally {
+      setLoading(false);
     }
 
-    router.push('/login');
-    router.refresh();
   };
 
   return (

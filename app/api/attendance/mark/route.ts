@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { Session } from "@/models/Session";
 import { Attendance } from "@/models/Attendance";
-import { getDistanceInMeters } from "@/utils/distance";
+import { calculateDistance } from "@/utils/geoFence";
 import { dbConnect } from "@/lib/db";
 
 export async function POST(req: Request) {
@@ -16,6 +16,13 @@ export async function POST(req: Request) {
       accuracy,
     } = await req.json();
 
+    if (!sessionId || !studentId || !latitude || !longitude) {
+      return NextResponse.json(
+        { message: "Missing required fields" },
+        { status: 400 }
+      );
+    }
+
     const session = await Session.findById(sessionId);
 
     if (!session || !session.isActive) {
@@ -26,31 +33,46 @@ export async function POST(req: Request) {
     }
 
     const now = new Date();
-    if (now < session.startTime || now > session.endTime) {
+
+    if (
+      !session.startTime ||
+      now < session.startTime ||
+      (session.endTime && now > session.endTime)
+    ) {
       return NextResponse.json(
         { message: "Outside session time window" },
         { status: 403 }
       );
     }
 
-    if (accuracy > 25) {
+    if (accuracy && accuracy > 30) {
       return NextResponse.json(
-        { message: "GPS accuracy too low. Move near window." },
+        { message: "GPS accuracy too low. Please move near window." },
         { status: 400 }
       );
     }
 
-    const distance = getDistanceInMeters(
+    const teacherLat = session.geoLocation?.lat;
+    const teacherLng = session.geoLocation?.lng;
+
+    if (!teacherLat || !teacherLng) {
+      return NextResponse.json(
+        { message: "Session location not set" },
+        { status: 500 }
+      );
+    }
+
+    const distance = calculateDistance(
       latitude,
       longitude,
-      session.geoLocation.lat,
-      session.geoLocation.lng
+      teacherLat,
+      teacherLng
     );
 
     if (distance > 20) {
       return NextResponse.json(
         {
-          message: `You must be within 10 meters of classroom. Current distance: ${Math.round(
+          message: `You must be within 20 meters. Current distance: ${Math.round(
             distance
           )}m`,
         },
@@ -84,8 +106,8 @@ export async function POST(req: Request) {
     return NextResponse.json({
       message: "Attendance marked successfully",
     });
-  } catch (error: any) {
-    console.error(error);
+  } catch (error) {
+    console.error("Attendance Error:", error);
 
     return NextResponse.json(
       { message: "Server error" },

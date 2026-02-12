@@ -158,7 +158,7 @@ export default function MarkAttendance() {
                 </div>
 
                 {/* Status Button */}
-                <div className="flex-shrink-0">
+                <div className="shrink-0">
                   {getStatusButton(classItem)}
                 </div>
               </div>
@@ -168,7 +168,7 @@ export default function MarkAttendance() {
 
         {/* Info Box */}
         <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
-          <h3 className="text-lg font-bold text-blue-900 mb-2">ℹ️ Attendance Window</h3>
+          <h3 className="text-lg font-bold text-blue-900 mb-2">Attendance Window</h3>
           <p className="text-blue-800">
             You can mark your attendance within 15 minutes of the class start time. Marking attendance outside this window is not allowed.
           </p>
