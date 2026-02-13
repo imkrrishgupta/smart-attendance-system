@@ -13,6 +13,7 @@ import {
   X
 } from 'lucide-react';
 import { useState } from 'react';
+import { signOut } from 'next-auth/react';
 
 export default function AdminLayout({
   children,
@@ -87,7 +88,7 @@ export default function AdminLayout({
 
           <div className="p-4 border-t border-slate-800">
             <button
-              onClick={handleLogout}
+              onClick={()=>signOut()}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-300 hover:bg-red-600 hover:text-white transition-colors"
             >
               <LogOut className="w-5 h-5" />
