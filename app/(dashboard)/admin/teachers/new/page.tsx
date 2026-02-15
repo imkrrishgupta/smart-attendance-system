@@ -1,46 +1,63 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import axios from "axios";
 
 export default function AddTeacherPage() {
   const router = useRouter();
 
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [user, setUser] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
+
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setUser({ ...user, [name]: value });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
-    setSuccess('');
 
-    const res = await fetch('/api/teachers', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password })
-    });
+    try {
+      setLoading(true);
+      setError("");
+      setSuccess("");
 
-    const data = await res.json();
-    setLoading(false);
+      const res = await axios.post("/api/teachers", user);
 
-    if (!res.ok) {
-      setError(data.message);
-      return;
+      setSuccess(res.data?.message || "Teacher created successfully");
+
+      setUser({
+        name: "",
+        email: "",
+        password: "",
+      });
+
+      setTimeout(() => {
+        router.push("/admin/teachers");
+        router.refresh();
+      }, 1000);
+
+    } catch (error: any) {
+      if (error.response) {
+        setError(error.response.data?.message || "Request failed");
+      } else if (error.request) {
+        setError("Server not responding");
+      } else {
+        setError("Something went wrong");
+      }
+
+    } finally {
+      setLoading(false);
+      
     }
-
-    setSuccess('Teacher created successfully');
-    setName('');
-    setEmail('');
-    setPassword('');
-
-    setTimeout(() => {
-      router.push('/admin/teachers');
-    }, 1200);
   };
 
   return (
@@ -53,40 +70,45 @@ export default function AddTeacherPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
             type="text"
+            name="name"
             placeholder="Full Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            value={user.name}
+            onChange={handleChange}
             className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
             required
           />
 
           <input
             type="email"
+            name="email"
             placeholder="Email Address"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={user.email}
+            onChange={handleChange}
             className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
             required
           />
 
           <input
             type="password"
+            name="password"
             placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            value={user.password}
+            onChange={handleChange}
             className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
             required
           />
 
           {error && <p className="text-red-600 text-sm text-center">{error}</p>}
-          {success && <p className="text-green-600 text-sm text-center">{success}</p>}
+          {success && (
+            <p className="text-green-600 text-sm text-center">{success}</p>
+          )}
 
           <button
             type="submit"
             disabled={loading}
             className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition disabled:opacity-50"
           >
-            {loading ? 'Creating...' : 'Create Teacher'}
+            {loading ? "Creating..." : "Create Teacher"}
           </button>
         </form>
       </div>
