@@ -18,6 +18,7 @@ import {
   Loader2
 } from 'lucide-react';
 import Link from 'next/link';
+import { BRANCHES, SEMESTERS } from '@/lib/constants';
 
 interface SessionItem {
   _id: string;
@@ -47,6 +48,8 @@ export default function TeacherDashboard() {
   const [newRadius, setNewRadius] = useState('100');
   const [geoLat, setGeoLat] = useState('');
   const [geoLng, setGeoLng] = useState('');
+  const [newBranch, setNewBranch] = useState(BRANCHES[0]);
+  const [newSemester, setNewSemester] = useState(SEMESTERS[0]);
   const [creating, setCreating] = useState(false);
 
   const fetchSessions = useCallback(async () => {
@@ -83,9 +86,9 @@ export default function TeacherDashboard() {
           teacherId,
           startTime: newStart,
           endTime: newEnd || undefined,
-          lat: parseFloat(geoLat) || 0,
-          lng: parseFloat(geoLng) || 0,
-          radius: parseInt(newRadius) || 100
+          radius: parseInt(newRadius) || 100,
+          branch: newBranch,
+          semester: newSemester
         })
       });
       if (res.ok) {
@@ -95,6 +98,8 @@ export default function TeacherDashboard() {
         setNewEnd('');
         setGeoLat('');
         setGeoLng('');
+        setNewBranch(BRANCHES[0]);
+        setNewSemester(SEMESTERS[0]);
         fetchSessions();
       }
     } catch (e) { console.error(e); }
@@ -235,8 +240,10 @@ export default function TeacherDashboard() {
         </div>
 
         {/* Today's Schedule */}
-        <TodaySchedule teacherId={teacherId} onStartSession={(subject) => {
-          setNewSubject(subject);
+        <TodaySchedule teacherId={teacherId} onStartSession={(subject, branch, semester) => {
+          setNewSubject(subject || '');
+          setNewBranch(branch || '');
+          setNewSemester(semester || '');
           setShowCreate(true);
         }} />
 
@@ -449,6 +456,33 @@ export default function TeacherDashboard() {
                 </div>
               </div>
 
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Branch</label>
+                  <select
+                    value={newBranch}
+                    onChange={e => setNewBranch(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white"
+                    required
+                  >
+                    <option value="" disabled>Select Branch</option>
+                    {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Semester</label>
+                  <select
+                    value={newSemester}
+                    onChange={e => setNewSemester(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white"
+                    required
+                  >
+                    <option value="" disabled>Select Semester</option>
+                    {SEMESTERS.map(s => <option key={s} value={s}>Semester {s}</option>)}
+                  </select>
+                </div>
+              </div>
+
               {/* Geo-Fence */}
               <div className="border rounded-lg p-3 space-y-3">
                 <div className="flex items-center justify-between">
@@ -477,7 +511,7 @@ export default function TeacherDashboard() {
 
               <button
                 onClick={handleCreateSession}
-                disabled={creating || !newSubject || !newStart}
+                disabled={creating || !newSubject || !newStart || !newBranch || !newSemester}
                 className="w-full py-2.5 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {creating ? 'Creating…' : 'Create Session'}
@@ -490,7 +524,7 @@ export default function TeacherDashboard() {
   );
 }
 
-function TodaySchedule({ teacherId, onStartSession }: { teacherId: string | null; onStartSession: (subject: string) => void }) {
+function TodaySchedule({ teacherId, onStartSession }: { teacherId: string | null; onStartSession: (subject: string, branch: string, semester: string) => void }) {
   const [schedule, setSchedule] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -531,7 +565,7 @@ function TodaySchedule({ teacherId, onStartSession }: { teacherId: string | null
               <h3 className="font-bold text-slate-900 mb-1 group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{slot.subject}</h3>
             </div>
             <button
-              onClick={() => onStartSession(slot.subject)}
+              onClick={() => onStartSession(slot.subject, slot.branch, slot.semester)}
               className="mt-4 text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 group/btn"
             >
               Start Attendance Session

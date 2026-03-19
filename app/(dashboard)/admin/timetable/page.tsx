@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Settings, Plus, Search, Calendar, MapPin, User, X, Clock } from 'lucide-react';
+import { Settings, Plus, Search, Calendar, MapPin, User, X, Clock, Trash2 } from 'lucide-react';
+import { BRANCHES, SEMESTERS } from '@/lib/constants';
 
 export default function AdminTimetable() {
   const [timetable, setTimetable] = useState<any[]>([]);
+  const [activeSessions, setActiveSessions] = useState<any[]>([]);
   const [teachers, setTeachers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -17,7 +19,9 @@ export default function AdminTimetable() {
     day: 'Monday',
     startTime: '09:00',
     endTime: '10:00',
-    room: ''
+    room: '',
+    branch: BRANCHES[0],
+    semester: SEMESTERS[0]
   });
   const [saving, setSaving] = useState(false);
 
@@ -25,12 +29,17 @@ export default function AdminTimetable() {
 
   const fetchData = async () => {
     try {
-      const [timetableRes, teachersRes] = await Promise.all([
+      const [timetableRes, teachersRes, sessionsRes] = await Promise.all([
         fetch('/api/admin/timetable'),
-        fetch('/api/admin/teachers')
+        fetch('/api/admin/teachers'),
+        fetch('/api/attendance/sessions')
       ]);
       if (timetableRes.ok) setTimetable(await timetableRes.json());
       if (teachersRes.ok) setTeachers(await teachersRes.json());
+      if (sessionsRes.ok) {
+        const allSessions = await sessionsRes.json();
+        setActiveSessions(allSessions.filter((s: any) => s.isActive));
+      }
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
@@ -50,7 +59,7 @@ export default function AdminTimetable() {
       });
       if (res.ok) {
         setShowAddModal(false);
-        setFormData({ subject: '', teacherId: '', day: 'Monday', startTime: '09:00', endTime: '10:00', room: '' });
+        setFormData({ subject: '', teacherId: '', day: 'Monday', startTime: '09:00', endTime: '10:00', room: '', branch: BRANCHES[0], semester: SEMESTERS[0] });
         fetchData();
       } else {
         const err = await res.json();
@@ -58,6 +67,15 @@ export default function AdminTimetable() {
       }
     } catch (e) { console.error(e); }
     setSaving(false);
+  };
+
+  const handleDeleteSchedule = async (id: string) => {
+    if (!confirm('Are you sure you want to remove this schedule?')) return;
+    try {
+        const res = await fetch(`/api/admin/timetable/${id}`, { method: 'DELETE' });
+        if (res.ok) fetchData();
+        else alert('Failed to delete schedule');
+    } catch (e) { console.error(e); }
   };
 
   const filteredTimetable = timetable.filter(item =>
@@ -99,42 +117,93 @@ export default function AdminTimetable() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {loading ? (
-            <div className="col-span-full py-20 text-center text-slate-400">Loading timetable...</div>
-          ) : filteredTimetable.length === 0 ? (
-            <div className="col-span-full py-20 text-center text-slate-500 italic">No schedules found.</div>
-          ) : (
-            filteredTimetable.map((item) => (
-              <div key={item._id} className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all p-6 group">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-bold rounded-lg uppercase tracking-wider">
-                    {item.day}
-                  </div>
-                  <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:bg-red-50 hover:text-red-500">
-                    <Trash2 className="w-4 h-4" />
+        {activeSessions.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+               <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
+               <h2 className="text-xl font-bold text-slate-900">Live Classes Now</h2>
+               <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded-lg uppercase tracking-wider">Active</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {activeSessions.map((session) => (
+                <div key={session._id} className="bg-white rounded-2xl border-2 border-green-200 shadow-sm p-6 relative overflow-hidden">
+                   <div className="absolute top-0 right-0 p-2">
+                      <div className="px-2 py-0.5 bg-green-500 text-white text-[8px] font-bold rounded uppercase">LIVE</div>
+                   </div>
+                   <h3 className="text-xl font-bold text-slate-900 mb-2">{session.subject}</h3>
+                   <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-slate-600">
+                      <User className="w-4 h-4" />
+                      <span className="text-sm font-medium text-indigo-600">{session.teacherId?.name || 'Teacher'}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-slate-600">
+                      <Clock className="w-4 h-4" />
+                      <span className="text-sm">Started: {new Date(session.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-slate-400 mt-4 pt-2 border-t border-slate-50">
+                      <span>{session.branch || 'Any Branch'}</span>
+                      <span className="mx-2">|</span>
+                      <span>Sem {session.semester || 'All'}</span>
+                    </div>
                   </div>
                 </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2">{item.subject}</h3>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-slate-600">
-                    <User className="w-4 h-4" />
-                    <span className="text-sm font-medium">{item.teacherId?.name || 'Unassigned'}</span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-6 pt-4">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-indigo-600" />
+            <h2 className="text-xl font-bold text-slate-900">Academic Timetable</h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {loading ? (
+              <div className="col-span-full py-20 text-center text-slate-400">Loading timetable...</div>
+            ) : filteredTimetable.length === 0 ? (
+              <div className="col-span-full py-20 text-center text-slate-500 italic">No schedules found.</div>
+            ) : (
+              filteredTimetable.map((item) => (
+                <div key={item._id} className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all p-6 group">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-bold rounded-lg uppercase tracking-wider">
+                      {item.day}
+                    </div>
+                    <div 
+                      onClick={() => handleDeleteSchedule(item._id)}
+                      className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:bg-red-50 hover:text-red-500"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 text-slate-600">
-                    <Clock className="w-4 h-4" />
-                    <span className="text-sm">{item.startTime} - {item.endTime}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-slate-600">
-                    <MapPin className="w-4 h-4" />
-                    <span className="text-sm">{item.room}</span>
+                  <h3 className="text-xl font-bold text-slate-900 mb-2">{item.subject}</h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-slate-600">
+                      <User className="w-4 h-4" />
+                      <span className="text-sm font-medium">{item.teacherId?.name || 'Unassigned'}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-slate-600">
+                      <Clock className="w-4 h-4" />
+                      <span className="text-sm">{item.startTime} - {item.endTime}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-slate-600">
+                      <MapPin className="w-4 h-4" />
+                      <span className="text-sm">{item.room}</span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-100">
+                      <span className="text-[10px] font-bold uppercase text-slate-400">Branch: {item.branch || 'N/A'}</span>
+                      <span className="text-slate-200">|</span>
+                      <span className="text-[10px] font-bold uppercase text-slate-400">Sem: {item.semester || 'N/A'}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
-          )}
+              ))
+            )}
+          </div>
         </div>
       </div>
+
 
       {showAddModal && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
@@ -168,7 +237,7 @@ export default function AdminTimetable() {
                   >
                     <option value="">Select a Teacher</option>
                     {teachers.map(t => (
-                      <option key={t._id} value={t._id}>{t.name} ({t.department})</option>
+                      <option key={t._id} value={t._id}>{t.name} ({t.branch || 'N/A'})</option>
                     ))}
                   </select>
                 </div>
@@ -214,10 +283,38 @@ export default function AdminTimetable() {
                     className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition"
                   />
                 </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Branch</label>
+                  <select
+                    required
+                    value={formData.branch}
+                    onChange={e => setFormData({ ...formData, branch: e.target.value })}
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 bg-white transition"
+                  >
+                    <option value="" disabled>Select Branch</option>
+                    {BRANCHES.map(b => (
+                      <option key={b} value={b}>{b}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Semester</label>
+                  <select
+                    required
+                    value={formData.semester}
+                    onChange={e => setFormData({ ...formData, semester: e.target.value })}
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 bg-white transition"
+                  >
+                    <option value="" disabled>Select Semester</option>
+                    {SEMESTERS.map(s => (
+                      <option key={s} value={s}>Semester {s}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <button
                 type="submit"
-                disabled={saving || !formData.teacherId}
+                disabled={saving || !formData.teacherId || !formData.branch || !formData.semester}
                 className="w-full py-4 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition disabled:opacity-50 mt-4 shadow-lg shadow-indigo-100"
               >
                 {saving ? 'Creating Schedule...' : 'Save Timetable Entry'}
@@ -231,4 +328,3 @@ export default function AdminTimetable() {
 }
 
 // Missing icon used in loop
-import { Trash2 } from 'lucide-react';

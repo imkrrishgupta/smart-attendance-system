@@ -26,6 +26,8 @@ interface ActiveSession {
   endTime: string;
   teacherId: { name: string };
   isActive: boolean;
+  branch?: string;
+  semester?: string;
 }
 
 export default function StudentDashboard() {
@@ -33,6 +35,8 @@ export default function StudentDashboard() {
   const studentId = (session?.user as any)?.id || null;
   const studentName = session?.user?.name || 'Student';
   const rollNo = (session?.user as any)?.email || '';
+  const branch = (session?.user as any)?.branch || '';
+  const semester = (session?.user as any)?.semester || '';
 
   // Sessions
   const [activeSessions, setActiveSessions] = useState<ActiveSession[]>([]);
@@ -75,7 +79,11 @@ export default function StudentDashboard() {
       const res = await fetch('/api/attendance/sessions');
       if (res.ok) {
         const data = await res.json();
-        const activeOnly = data.filter((s: ActiveSession) => s.isActive);
+        const activeOnly = data.filter((s: ActiveSession) => 
+          s.isActive && 
+          (!s.branch || s.branch === branch) && 
+          (!s.semester || s.semester === semester)
+        );
         setActiveSessions(activeOnly);
       }
     } catch (e) { console.error(e); }
@@ -103,9 +111,15 @@ export default function StudentDashboard() {
         const records = await recordsRes.json();
         const allSessions = await allSessionsRes.json();
 
+        // Only count sessions that match the student's branch and semester
+        const studentSpecificSessions = allSessions.filter((s: any) => 
+          (!s.branch || s.branch === branch) && 
+          (!s.semester || s.semester === semester)
+        );
+
         const present = records.filter((r: any) => r.status === 'present').length;
         // Total sessions that have already ended
-        const totalEnded = allSessions.filter((s: any) => new Date(s.endTime) < new Date()).length;
+        const totalEnded = studentSpecificSessions.filter((s: any) => new Date(s.endTime) < new Date()).length;
 
         setStats({
           total: totalEnded,

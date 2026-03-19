@@ -31,12 +31,10 @@ export async function POST(request: Request) {
     );
   }
 
-  const hashedPassword = await bcrypt.hash(password, 10);
-
   const teacher = await User.create({
     name,
     email,
-    password: hashedPassword,
+    password,
     role: 'teacher'
   });
 

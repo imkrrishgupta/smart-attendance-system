@@ -5,15 +5,15 @@ import { User } from '@/models/User';
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password, role, rollNumber, enrollmentNo } = await req.json();
+    const { name, email, password, role, rollNumber, enrollmentNo, branch, semester } = await req.json();
 
     if (!name || !email || !password || !role) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
     }
 
     // Additional validation for students
-    if (role === 'student' && (!rollNumber || !enrollmentNo)) {
-      return NextResponse.json({ error: 'Roll number and Enrollment number are required for students' }, { status: 400 });
+    if (role === 'student' && (!rollNumber || !enrollmentNo || !branch || !semester)) {
+      return NextResponse.json({ error: 'Roll number, Enrollment number, Branch, and Semester are required for students' }, { status: 400 });
     }
 
     await dbConnect();
@@ -30,13 +30,13 @@ export async function POST(req: Request) {
       }
     }
 
-    const hashed = await bcrypt.hash(password, 10);
-
     const userData: any = {
       name,
       email,
-      password: hashed,
-      role
+      password,
+      role,
+      branch,
+      semester
     };
 
     if (role === 'student') {
@@ -52,6 +52,8 @@ export async function POST(req: Request) {
         name: user.name,
         email: user.email,
         role: user.role,
+        branch: user.branch,
+        semester: user.semester,
         ...(role === 'student' && { rollNumber: user.rollNumber, enrollmentNo: user.enrollmentNo })
       },
       { status: 201 }

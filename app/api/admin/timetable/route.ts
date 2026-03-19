@@ -19,9 +19,9 @@ export async function POST(request: Request) {
     try {
         await dbConnect();
         const body = await request.json();
-        const { subject, teacherId, day, startTime, endTime, room } = body;
+        const { subject, teacherId, day, startTime, endTime, room, branch, semester } = body;
 
-        if (!subject || !teacherId || !day || !startTime || !endTime || !room) {
+        if (!subject || !teacherId || !day || !startTime || !endTime || !room || !branch || !semester) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
@@ -31,7 +31,9 @@ export async function POST(request: Request) {
             day,
             startTime,
             endTime,
-            room
+            room,
+            branch,
+            semester
         });
 
         return NextResponse.json(entry, { status: 201 });

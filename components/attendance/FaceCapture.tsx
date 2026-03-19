@@ -358,7 +358,7 @@ export default function FaceCapture({ studentId, mode = 'verify', onVerified, on
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 studentId,
-                                descriptor: descriptors[0]
+                                descriptors // Send all captured descriptors for better reliability
                             })
                         });
 

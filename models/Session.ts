@@ -11,6 +11,8 @@ const SessionSchema = new Schema(
     startTime: { type: Date, required: true },
     endTime: { type: Date },
     isActive: { type: Boolean, default: false },
+    branch: { type: String },
+    semester: { type: String },
     geoLocation: {
       lat: { type: Number },
       lng: { type: Number },

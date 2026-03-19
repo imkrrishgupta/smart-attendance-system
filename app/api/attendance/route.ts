@@ -17,15 +17,48 @@ export async function GET(request: Request) {
   const sessionId = searchParams.get('sessionId');
   const studentId = searchParams.get('studentId');
 
-  const query: any = {};
-  if (sessionId) query.sessionId = sessionId;
-  if (studentId) query.studentId = studentId;
+  if (sessionId) {
+    const attendance = await Attendance.find({ sessionId })
+      .populate('studentId', 'name email rollNumber')
+      .populate('sessionId', 'subject startTime endTime');
+    return NextResponse.json(attendance);
+  }
 
-  const attendance = await Attendance.find(query)
-    .populate('studentId', 'name email')
-    .populate('sessionId', 'subject startTime endTime');
+  if (studentId) {
+    const student = await User.findById(studentId);
+    if (!student) return NextResponse.json({ error: 'Student not found' }, { status: 404 });
 
-  return NextResponse.json(attendance);
+    const [attendanceRecords, allSessions] = await Promise.all([
+      Attendance.find({ studentId }).populate('sessionId', 'subject startTime endTime'),
+      Session.find({
+        $or: [
+          { branch: student.branch, semester: student.semester },
+          { branch: { $exists: false } } // Fallback for old sessions
+        ]
+      })
+    ]);
+
+    // Create a synthesized list of all sessions that should have been attended
+    const fullHistory = allSessions.map(session => {
+      const record = attendanceRecords.find(r => r.sessionId?._id.toString() === session._id.toString());
+      if (record) return record;
+
+      // If no record exists and session has ended, mark as absent
+      if (new Date(session.endTime) < new Date()) {
+        return {
+          _id: `absent-${session._id}`,
+          sessionId: session,
+          status: 'absent',
+          createdAt: session.startTime
+        };
+      }
+      return null;
+    }).filter(Boolean);
+
+    return NextResponse.json(fullHistory);
+  }
+
+  return NextResponse.json({ error: 'sessionId or studentId required' }, { status: 400 });
 }
 
 /**

@@ -28,7 +28,9 @@ export const authOptions: AuthOptions = {
           id: user._id.toString(),
           name: user.name,
           email: user.email,
-          role: user.role
+          role: user.role,
+          branch: user.branch,
+          semester: user.semester
         };
       }
     })
@@ -38,13 +40,17 @@ export const authOptions: AuthOptions = {
       if (user) {
         token.id = user.id;
         token.role = user.role;
+        token.branch = (user as any).branch;
+        token.semester = (user as any).semester;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as string;
+        (session.user as any).id = token.id as string;
+        (session.user as any).role = token.role as string;
+        (session.user as any).branch = token.branch as string;
+        (session.user as any).semester = token.semester as string;
       }
       return session;
     }

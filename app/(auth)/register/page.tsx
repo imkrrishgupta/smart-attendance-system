@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { BRANCHES, SEMESTERS } from '@/lib/constants';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -12,6 +13,8 @@ export default function RegisterPage() {
   const [role, setRole] = useState('student');
   const [rollNumber, setRollNumber] = useState('');
   const [enrollmentNo, setEnrollmentNo] = useState('');
+  const [branch, setBranch] = useState(BRANCHES[0]);
+  const [semester, setSemester] = useState(SEMESTERS[0]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -23,7 +26,7 @@ export default function RegisterPage() {
     const res = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password, role, rollNumber, enrollmentNo })
+      body: JSON.stringify({ name, email, password, role, rollNumber, enrollmentNo, branch, semester })
     });
 
     setLoading(false);
@@ -100,6 +103,22 @@ export default function RegisterPage() {
                 className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 required
               />
+              <select
+                value={branch}
+                onChange={(e) => setBranch(e.target.value)}
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                required
+              >
+                {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
+              </select>
+              <select
+                value={semester}
+                onChange={(e) => setSemester(e.target.value)}
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                required
+              >
+                {SEMESTERS.map(s => <option key={s} value={s}>Semester {s}</option>)}
+              </select>
             </>
           )}
 

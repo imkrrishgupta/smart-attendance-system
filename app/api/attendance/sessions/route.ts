@@ -52,7 +52,7 @@ export async function POST(request: Request) {
         await dbConnect();
         const body = await request.json();
 
-        const { subject, teacherId, startTime, endTime, lat, lng, radius } = body;
+        const { subject, teacherId, startTime, endTime, lat, lng, radius, branch, semester } = body;
 
         if (!subject || !teacherId || !startTime) {
             return NextResponse.json(
@@ -67,6 +67,8 @@ export async function POST(request: Request) {
             startTime: new Date(startTime),
             endTime: endTime ? new Date(endTime) : new Date(new Date(startTime).getTime() + 60 * 60 * 1000),
             isActive: false,
+            branch,
+            semester,
             geoLocation: {
                 lat: lat || 0,
                 lng: lng || 0,

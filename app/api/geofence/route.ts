@@ -70,7 +70,9 @@ export async function POST(request: Request) {
     longitude
   );
 
-  const isInside = distance <= geoLocation.radius;
+  // Buffer: allow 20m extra to account for GPS drift indoors
+  const buffer = 20;
+  const isInside = distance <= (geoLocation.radius + buffer);
 
   return NextResponse.json({
     isInside,
