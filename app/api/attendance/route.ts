@@ -57,6 +57,14 @@ export async function POST(request: Request) {
     );
   }
 
+  // Strict Expiry Check: Even if session.isActive is true, reject if past endTime
+  if (session.endTime && new Date() > new Date(session.endTime)) {
+    return NextResponse.json(
+      { error: 'Session has expired' },
+      { status: 400 }
+    );
+  }
+
   const student = await User.findById(studentId);
   if (!student || student.role !== 'student') {
     return NextResponse.json(

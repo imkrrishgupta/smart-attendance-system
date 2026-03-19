@@ -10,6 +10,8 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('student');
+  const [rollNumber, setRollNumber] = useState('');
+  const [enrollmentNo, setEnrollmentNo] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -21,7 +23,7 @@ export default function RegisterPage() {
     const res = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password, role })
+      body: JSON.stringify({ name, email, password, role, rollNumber, enrollmentNo })
     });
 
     setLoading(false);
@@ -77,7 +79,29 @@ export default function RegisterPage() {
             className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             <option value="student">Student</option>
+            <option value="teacher">Teacher</option>
           </select>
+
+          {role === 'student' && (
+            <>
+              <input
+                type="text"
+                placeholder="Roll Number"
+                value={rollNumber}
+                onChange={(e) => setRollNumber(e.target.value)}
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                required
+              />
+              <input
+                type="text"
+                placeholder="Enrollment Number"
+                value={enrollmentNo}
+                onChange={(e) => setEnrollmentNo(e.target.value)}
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                required
+              />
+            </>
+          )}
 
           {error && (
             <p className="text-red-600 text-sm text-center">{error}</p>

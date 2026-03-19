@@ -1,12 +1,14 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { 
-  LayoutDashboard, 
-  PlayCircle, 
-  ClipboardList, 
+import { useSession } from 'next-auth/react';
+import {
+  LayoutDashboard,
+  PlayCircle,
+  ClipboardList,
   FileText,
-  Settings,
+  AlertCircle,
+  Calendar,
   LogOut,
   GraduationCap,
   Menu,
@@ -21,14 +23,18 @@ export default function TeacherLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { data: session } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const teacherName = session?.user?.name || 'Teacher';
 
   const navigation = [
     { name: 'Dashboard', href: '/teacher/dashboard', icon: LayoutDashboard },
+    { name: 'My Timetable', href: '/teacher/timetable', icon: Calendar },
     { name: 'Sessions', href: '/teacher/sessions', icon: PlayCircle },
     { name: 'Attendance', href: '/teacher/attendance', icon: ClipboardList },
-    { name: 'Requests', href: '/teacher/requests', icon: FileText },
-    { name: 'Settings', href: '/teacher/settings', icon: Settings },
+    { name: 'Issues', href: '/teacher/issues', icon: AlertCircle },
+    { name: 'Leave Requests', href: '/teacher/requests', icon: FileText },
   ];
 
   const handleLogout = () => {
@@ -39,9 +45,8 @@ export default function TeacherLayout({
 
   return (
     <div className="flex h-screen bg-slate-50">
-      <aside className={`${
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      } fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 transition-transform duration-300 lg:translate-x-0 lg:static lg:inset-auto`}>
+      <aside className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 transition-transform duration-300 lg:translate-x-0 lg:static lg:inset-auto`}>
         <div className="flex h-full flex-col">
           <div className="flex items-center justify-between p-6 border-b border-slate-800">
             <div className="flex items-center gap-3">
@@ -50,7 +55,7 @@ export default function TeacherLayout({
               </div>
               <div>
                 <h2 className="text-white font-bold">Teacher Panel</h2>
-                <p className="text-slate-400 text-xs">Dr. Sarah Johnson</p>
+                <p className="text-slate-400 text-xs truncate max-w-[140px]">{teacherName}</p>
               </div>
             </div>
             <button
@@ -72,11 +77,10 @@ export default function TeacherLayout({
                     router.push(item.href);
                     setSidebarOpen(false);
                   }}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                    isActive
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${isActive
                       ? 'bg-green-600 text-white'
                       : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                  }`}
+                    }`}
                 >
                   <Icon className="w-5 h-5" />
                   {item.name}

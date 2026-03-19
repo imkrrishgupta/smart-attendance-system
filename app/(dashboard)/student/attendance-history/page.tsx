@@ -1,128 +1,140 @@
 'use client';
 
-import { useState } from 'react';
-import { Calendar, Filter, Users, CheckCircle } from 'lucide-react';
-import Link from 'next/link';
+import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import {
+  Calendar,
+  Filter,
+  CheckCircle,
+  Loader2,
+  XCircle,
+  TrendingUp
+} from 'lucide-react';
 
 interface AttendanceRecord {
-  id: string;
-  date: string;
-  time: string;
-  subject: string;
+  _id: string;
+  sessionId: {
+    _id: string;
+    subject: string;
+    startTime: string;
+    endTime: string;
+  };
   status: 'present' | 'absent';
-  remarks: string;
+  createdAt: string;
 }
 
 export default function AttendanceHistory() {
-  const [selectedSemester, setSelectedSemester] = useState('2024-2025 / Sem 1');
+  const { data: session } = useSession();
+  const studentId = (session?.user as any)?.id;
+
+  const [loading, setLoading] = useState(true);
+  const [attendanceData, setAttendanceData] = useState<AttendanceRecord[]>([]);
+  const [selectedSemester, setSelectedSemester] = useState('2024-2025 / Sem 2');
   const [selectedSubject, setSelectedSubject] = useState('All Subjects');
-  const [dateRange, setDateRange] = useState('01 Oct 2023 - 31 Oct 2023');
   const [currentPage, setCurrentPage] = useState(1);
 
-  const semesters = ['2024-2025 / Sem 1', '2024-2025 / Sem 2', '2023-2024 / Sem 1', '2023-2024 / Sem 2'];
+  const semesters = [
+    '2024-2025 / Sem 2',
+    '2024-2025 / Sem 1',
+    '2023-2024 / Sem 2',
+    '2023-2024 / Sem 1'
+  ];
+
   const subjects = [
     'All Subjects',
-    'Data Structures',
-    'Algorithms',
-    'Database Systems',
-    'Operating Systems',
-    'Web Development',
+    ...Array.from(
+      new Set(attendanceData.map((r) => r.sessionId?.subject).filter(Boolean))
+    )
   ];
 
-  const attendanceData: AttendanceRecord[] = [
-    {
-      id: '1',
-      date: 'Oct 24, 2023',
-      time: '10:00 AM - 11:00 AM',
-      subject: 'Data Structures',
-      status: 'present',
-      remarks: '-',
-    },
-    {
-      id: '2',
-      date: 'Oct 23, 2023',
-      time: '02:00 PM - 03:00 PM',
-      subject: 'Algorithms',
-      status: 'absent',
-      remarks: 'Medical Leave',
-    },
-    {
-      id: '3',
-      date: 'Oct 22, 2023',
-      time: '09:00 AM - 10:00 AM',
-      subject: 'Database Systems',
-      status: 'present',
-      remarks: '-',
-    },
-    {
-      id: '4',
-      date: 'Oct 21, 2023',
-      time: '10:00 AM - 11:00 AM',
-      subject: 'Data Structures',
-      status: 'present',
-      remarks: '-',
-    },
-    {
-      id: '5',
-      date: 'Oct 20, 2023',
-      time: '02:00 PM - 03:00 PM',
-      subject: 'Algorithms',
-      status: 'present',
-      remarks: '-',
-    },
-    {
-      id: '6',
-      date: 'Oct 27, 2023',
-      time: '09:00 AM - 10:00 AM',
-      subject: 'Database Systems',
-      status: 'present',
-      remarks: '-',
-    },
-  ];
+  useEffect(() => {
+    if (studentId) {
+      fetchAttendance();
+    }
+  }, [studentId]);
 
-  const stats = {
-    overall: '85%',
-    totalClasses: '60',
-    presentAbsent: '51 / 9',
+  const fetchAttendance = async () => {
+    try {
+      const res = await fetch(`/api/attendance?studentId=${studentId}`);
+      if (!res.ok) throw new Error('Failed to fetch');
+      const data = await res.json();
+      setAttendanceData(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const itemsPerPage = 6;
-  const totalPages = Math.ceil(attendanceData.length / itemsPerPage);
-  const paginatedData = attendanceData.slice(
+  const filteredData = attendanceData.filter((record) => {
+    if (
+      selectedSubject !== 'All Subjects' &&
+      record.sessionId?.subject !== selectedSubject
+    )
+      return false;
+    return true;
+  });
+
+  const stats = {
+    totalClasses: filteredData.length,
+    present: filteredData.filter((r) => r.status === 'present').length,
+    absent: filteredData.filter((r) => r.status === 'absent').length,
+    get overall() {
+      return this.totalClasses > 0
+        ? `${Math.round((this.present / this.totalClasses) * 100)}%`
+        : '0%';
+    }
+  };
+
+  const itemsPerPage = 8;
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+
+  const paginatedData = filteredData.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 font-sans">
+
       {/* Header */}
       <header className="bg-white border-b border-slate-200">
         <div className="px-8 py-6">
-          <h1 className="text-3xl font-bold text-slate-900">Attendance History</h1>
-          <div className="flex items-center gap-2 text-slate-600 mt-2">
-            <Link href="/student/dashboard" className="hover:text-slate-900">
-              Home
-            </Link>
-            <span className="mx-1">›</span>
-            <span>Attendance History</span>
-          </div>
+          <h1 className="text-3xl font-bold text-slate-900">
+            Attendance History
+          </h1>
+          <p className="text-slate-600 mt-1">Your attendance records</p>
         </div>
       </header>
 
-      {/* Main Content */}
-      <div className="p-8">
-        {/* Filters Section */}
-        <div className="bg-white rounded-xl border border-slate-200 p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-            {/* Semester Filter */}
+      <div className="p-8 max-w-7xl mx-auto space-y-8">
+
+        {/* Filters */}
+        <div className="bg-white rounded-xl border border-slate-200">
+          <div className="p-6 border-b border-slate-200">
+            <h2 className="text-xl font-bold text-slate-900">Filters</h2>
+          </div>
+
+          <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+
+            {/* Semester */}
             <div>
-              <label className="block text-sm font-semibold text-slate-900 mb-2">
-                Academic Year/Semester:
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                Academic Period
               </label>
+
               <select
                 value={selectedSemester}
                 onChange={(e) => setSelectedSemester(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg"
               >
                 {semesters.map((sem) => (
                   <option key={sem} value={sem}>
@@ -132,15 +144,19 @@ export default function AttendanceHistory() {
               </select>
             </div>
 
-            {/* Subject Filter */}
+            {/* Subject */}
             <div>
-              <label className="block text-sm font-semibold text-slate-900 mb-2">
-                Subject:
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                Subject Filter
               </label>
+
               <select
                 value={selectedSubject}
-                onChange={(e) => setSelectedSubject(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={(e) => {
+                  setSelectedSubject(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg"
               >
                 {subjects.map((subj) => (
                   <option key={subj} value={subj}>
@@ -150,179 +166,128 @@ export default function AttendanceHistory() {
               </select>
             </div>
 
-            {/* Date Range */}
-            <div>
-              <label className="block text-sm font-semibold text-slate-900 mb-2">
-                Date:
-              </label>
-              <input
-                type="text"
-                value={dateRange}
-                onChange={(e) => setDateRange(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="01 Oct 2023 - 31 Oct 2023"
-              />
-            </div>
-
-            {/* Filter Button */}
-            <div>
-              <button className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
-                <Filter className="w-5 h-5" />
-                Filter
+            <div className="flex items-end">
+              <button className="w-full px-6 py-2.5 bg-blue-600 text-white rounded-lg flex items-center justify-center gap-2">
+                <Filter className="w-4 h-4" />
+                Apply
               </button>
             </div>
+
           </div>
         </div>
 
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {/* Overall Attendance */}
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
-                <CheckCircle className="w-6 h-6 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-slate-600 font-medium mb-1">Overall Attendance:</p>
-                <p className="text-3xl font-bold text-slate-900">{stats.overall}</p>
-              </div>
-            </div>
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+          <div className="bg-white p-6 rounded-xl border">
+            <CheckCircle className="text-green-600 mb-2" />
+            <div className="text-3xl font-bold">{stats.present}</div>
+            <p className="text-sm text-slate-500">Present</p>
           </div>
 
-          {/* Total Classes */}
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-lg bg-purple-100 flex items-center justify-center">
-                <Users className="w-6 h-6 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-slate-600 font-medium mb-1">Total Classes:</p>
-                <p className="text-3xl font-bold text-slate-900">{stats.totalClasses}</p>
-              </div>
-            </div>
+          <div className="bg-white p-6 rounded-xl border">
+            <XCircle className="text-red-600 mb-2" />
+            <div className="text-3xl font-bold">{stats.absent}</div>
+            <p className="text-sm text-slate-500">Absent</p>
           </div>
 
-          {/* Present/Absent */}
-          <div className="bg-white rounded-xl border border-slate-200 p-6">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
-                <CheckCircle className="w-6 h-6 text-green-600" />
-              </div>
-              <div>
-                <p className="text-slate-600 font-medium mb-1">Present/Absent:</p>
-                <p className="text-3xl font-bold text-slate-900">
-                  <span className="text-green-600">{stats.presentAbsent.split(' / ')[0]}</span>
-                  <span className="text-slate-400 mx-2">/</span>
-                  <span className="text-red-600">{stats.presentAbsent.split(' / ')[1]}</span>
-                </p>
-              </div>
-            </div>
+          <div className="bg-white p-6 rounded-xl border">
+            <Calendar className="text-blue-600 mb-2" />
+            <div className="text-3xl font-bold">{stats.totalClasses}</div>
+            <p className="text-sm text-slate-500">Total Classes</p>
           </div>
+
+          <div className="bg-white p-6 rounded-xl border">
+            <TrendingUp className="text-indigo-600 mb-2" />
+            <div className="text-3xl font-bold">{stats.overall}</div>
+            <p className="text-sm text-slate-500">Attendance %</p>
+          </div>
+
         </div>
 
-        {/* Attendance Table */}
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-slate-50">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 border-b border-slate-200">
-                    Date
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 border-b border-slate-200">
-                    Time
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 border-b border-slate-200">
-                    Subject
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 border-b border-slate-200">
-                    Status
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 border-b border-slate-200">
-                    Remarks
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
+        {/* Records */}
+        <div className="bg-white rounded-xl border border-slate-200">
+
+          <div className="p-6 border-b">
+            <h2 className="text-xl font-bold">Records</h2>
+          </div>
+
+          <div className="p-6">
+
+            {paginatedData.length === 0 ? (
+              <p className="text-center text-slate-500">
+                No attendance records found
+              </p>
+            ) : (
+              <div className="space-y-3">
+
                 {paginatedData.map((record) => (
-                  <tr key={record.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 text-sm text-slate-900 font-medium">{record.date}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600">{record.time}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600">{record.subject}</td>
-                    <td className="px-6 py-4">
+                  <div
+                    key={record._id}
+                    className="p-4 bg-slate-50 border rounded-lg"
+                  >
+
+                    <div className="flex justify-between items-center">
+
+                      <h3 className="font-semibold">
+                        {record.sessionId?.subject || 'N/A'}
+                      </h3>
+
                       <span
-                        className={`px-4 py-2 rounded-full text-sm font-semibold ${
+                        className={`text-xs font-semibold px-2 py-1 rounded-full ${
                           record.status === 'present'
                             ? 'bg-green-100 text-green-700'
                             : 'bg-red-100 text-red-700'
                         }`}
                       >
-                        {record.status === 'present' ? 'Present' : 'Absent'}
+                        {record.status}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-600">{record.remarks}</td>
-                  </tr>
+
+                    </div>
+
+                    <p className="text-sm text-slate-500 mt-1">
+                      {new Date(record.createdAt).toLocaleString()}
+                    </p>
+
+                  </div>
                 ))}
-              </tbody>
-            </table>
+
+              </div>
+            )}
           </div>
 
           {/* Pagination */}
-          <div className="flex items-center justify-center gap-2 px-6 py-4 border-t border-slate-200">
-            <button
-              onClick={() => setCurrentPage(1)}
-              className="px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-            >
-              «
-            </button>
-            <button
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              className="px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-            >
-              ‹
-            </button>
+          {totalPages > 1 && (
+            <div className="flex justify-between items-center px-6 py-4 border-t bg-slate-50">
 
-            {Array.from({ length: Math.min(3, totalPages) }, (_, i) => (
-              <button
-                key={i + 1}
-                onClick={() => setCurrentPage(i + 1)}
-                className={`px-3 py-2 rounded-lg transition-colors ${
-                  currentPage === i + 1
-                    ? 'bg-blue-600 text-white'
-                    : 'text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                {i + 1}
-              </button>
-            ))}
+              <p className="text-sm text-slate-600">
+                Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
+                {Math.min(currentPage * itemsPerPage, filteredData.length)} of{' '}
+                {filteredData.length}
+              </p>
 
-            {totalPages > 3 && (
-              <>
-                <span className="text-slate-400">...</span>
-                {currentPage > 3 && (
-                  <button
-                    onClick={() => setCurrentPage(totalPages)}
-                    className="px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-                  >
-                    {totalPages}
-                  </button>
-                )}
-              </>
-            )}
+              <div className="flex gap-2">
 
-            <button
-              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-              className="px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-            >
-              ›
-            </button>
-            <button
-              onClick={() => setCurrentPage(totalPages)}
-              className="px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-            >
-              »
-            </button>
-          </div>
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((p) => p - 1)}
+                  className="px-4 py-2 border rounded disabled:opacity-40"
+                >
+                  Previous
+                </button>
+
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((p) => p + 1)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-40"
+                >
+                  Next
+                </button>
+
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
     </div>

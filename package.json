@@ -10,8 +10,10 @@
     "seed:admin": "ts-node scripts/createAdmin.ts"
   },
   "dependencies": {
-    "axios": "^1.13.5",
+    "@vladmandic/face-api": "^1.7.15",
+    "axios": "^1.13.6",
     "bcryptjs": "^3.0.3",
+    "canvas": "^3.2.1",
     "geolib": "^3.3.4",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.563.0",
