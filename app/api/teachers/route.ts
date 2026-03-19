@@ -28,12 +28,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: 'Email already exists' }, { status: 409 });
   }
 
-  const hashed = await bcrypt.hash(password, 10);
-
   const teacher = await User.create({
     name,
     email,
-    password: hashed,
+    password,
     role: 'teacher'
   });
 

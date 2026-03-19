@@ -1,9 +1,26 @@
-import mongoose, { Schema, model, models } from 'mongoose';
+import { Schema, model, models, Document, CallbackError } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 export type UserRole = 'admin' | 'teacher' | 'student';
 
-const UserSchema = new Schema(
+export interface IUser extends Document {
+  name: string;
+  email: string;
+  password: string;
+  role: UserRole;
+  isActive: boolean;
+  department?: string;
+  employeeId?: string;
+  rollNumber?: string;
+  enrollmentNo?: string;
+  branch?: string;
+  semester?: string;
+  faceEmbeddings: number[][];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const UserSchema = new Schema<IUser>(
   {
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
@@ -15,6 +32,8 @@ const UserSchema = new Schema(
     },
     isActive: { type: Boolean, default: true },
     department: { type: String },
+    branch: { type: String },
+    semester: { type: String },
     employeeId: { type: String, unique: true, sparse: true },
     rollNumber: {
       type: String,
@@ -24,10 +43,6 @@ const UserSchema = new Schema(
     enrollmentNo: {
       type: String,
     },
-    faceEmbedding: {
-      type: [Number],
-      default: []
-    },
     faceEmbeddings: {
       type: [[Number]],
       default: []
@@ -36,11 +51,13 @@ const UserSchema = new Schema(
   { timestamps: true }
 );
 
-UserSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
-  const hash = await bcrypt.hash(this.password, 10);
-  this.password = hash;
-  next();
+UserSchema.pre<IUser>('save', async function () {
+  if (!this.isModified('password')) return;
+  
+  this.password = await bcrypt.hash(this.password as string, 10);
 });
 
-export const User = models.User || model('User', UserSchema);
+if (models.User) {
+  delete (models as any).User;
+}
+export const User = model<IUser>('User', UserSchema);

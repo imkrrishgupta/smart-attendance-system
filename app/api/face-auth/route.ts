@@ -35,15 +35,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Student not found' }, { status: 404 });
     }
 
-    // Lazy migration: if they have the old field but not the new one
-    if ((!student.faceEmbeddings || student.faceEmbeddings.length === 0) && 
-        (student.faceEmbedding && student.faceEmbedding.length > 0)) {
-        student.faceEmbeddings = [student.faceEmbedding];
-        await student.save();
-    }
-
     // Resolve descriptors: either multiple from client (enrollment) or single
-    let activeDescriptors = descriptors || (descriptor ? [descriptor] : null);
+    let activeDescriptors: any[] | null = descriptors || (descriptor ? [descriptor] : null);
 
     if (image && !activeDescriptors) {
       const imageBuffer = Buffer.from(image.split(',')[1], 'base64');
@@ -58,60 +51,67 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Valid face data is required' }, { status: 400 });
     }
 
-    // Enrollment: Store multiple descriptors
+    // Enrollment: Store descriptors
     // Triggered by explicit mode or if profile is completely empty
     const isEnrollMode = mode === 'enroll' || !student.faceEmbeddings || student.faceEmbeddings.length === 0;
 
-    if (isEnrollMode && descriptors) {
-      // Validate we have enough frames for a robust profile (require at least 5 out of 10)
-      if (activeDescriptors.length < 5) {
-        return NextResponse.json({ 
-          error: `Insufficient frames for biometric profile. ${activeDescriptors.length}/10 frames captured. Minimum 5 frames required. Please try again.` 
-        }, { status: 400 });
-      }
+    if (isEnrollMode) {
+      const enrollmentDescriptors = descriptors || (descriptor ? [descriptor] : null);
       
-      // Store all descriptors for multi-angle matching (more robust)
-      student.faceEmbeddings = activeDescriptors;
-      // Also clear old legacy field to prevent re-migration
-      student.faceEmbedding = []; 
-      
-      // Explicitly tell Mongoose that the nested array has been modified
-      student.markModified('faceEmbeddings');
-      student.markModified('faceEmbedding');
-      
-      await student.save();
-      console.log(`[SUCCESS] Biometric profile updated for student: ${studentId} with ${activeDescriptors.length} frames`);
+      if (enrollmentDescriptors) {
+        // If it's plural enrollment (from capture loop), require minimum 5 frames
+        if (descriptors && enrollmentDescriptors.length < 5) {
+          return NextResponse.json({ 
+            error: `Insufficient frames for biometric profile. ${enrollmentDescriptors.length}/10 frames captured. Minimum 5 frames required. Please try again.` 
+          }, { status: 400 });
+        }
+        
+        // Store descriptors
+        student.faceEmbeddings = enrollmentDescriptors;
+        
+        student.markModified('faceEmbeddings');
+        await student.save();
+        console.log(`[SUCCESS] Biometric profile updated for student: ${studentId} with ${enrollmentDescriptors.length} frames`);
 
-      return NextResponse.json({
-        verified: true,
-        confidence: 100,
-        message: `Multi-profile biometric enrollment successful. ${activeDescriptors.length} frames stored.`
-      });
+        return NextResponse.json({
+          verified: true,
+          confidence: 100,
+          message: `Biometric enrollment successful. ${enrollmentDescriptors.length} frames stored.`
+        });
+      }
     }
 
     // Comparison: Compare current descriptor against all stored profiles
-    // We take the best match (minimum distance)
-    const currentDescriptor = activeDescriptors[0];
-    let minDistance = 1.0;
-
-    for (const storedDescriptor of student.faceEmbeddings) {
-      const dist = euclideanDistance(currentDescriptor, storedDescriptor);
-      if (dist < minDistance) minDistance = dist;
+    if (!student.faceEmbeddings || student.faceEmbeddings.length === 0) {
+       return NextResponse.json({
+        verified: false,
+        error: 'No biometric profile found. Please enroll first.'
+      }, { status: 401 });
     }
 
-    /**
-     * With multiple embeddings (multi-angle), we can be slightly stricter.
-     * 0.55 is a balanced threshold for face-api.js.
-     */
-    const threshold = 0.55;
+    // Compare current descriptor(s) against all stored profiles
+    // We check each input descriptor; if any one matches any stored profile, verified = true
+    const inputDescriptors = activeDescriptors; 
+    let minDistance = 1.0;
+
+    for (const currentDesc of inputDescriptors) {
+      for (const storedDescriptor of student.faceEmbeddings) {
+        const dist = euclideanDistance(currentDesc, storedDescriptor);
+        if (dist < minDistance) minDistance = dist;
+      }
+    }
+
+    const threshold = 0.60; // Slightly relaxed for better reliability
     const verified = minDistance < threshold;
     const confidence = Math.max(0, Math.min(100, Math.round((1 - minDistance) * 100)));
+
+    console.log(`[FACE_AUTH] Verification: ${verified}, MinDist: ${minDistance.toFixed(4)}, Stored: ${student.faceEmbeddings.length}`);
 
     if (!verified) {
       return NextResponse.json({
         verified: false,
         confidence,
-        error: 'Face verification failed. Bio-identity mismatch.'
+        error: `Face verification failed. Confidence: ${confidence}%. (Dist: ${minDistance.toFixed(3)})`
       }, { status: 401 });
     }
 

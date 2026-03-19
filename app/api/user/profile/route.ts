@@ -49,7 +49,7 @@ export async function PUT(request: Request) {
 
         if (name) user.name = name;
         if (password) {
-            user.password = await bcrypt.hash(password, 10);
+            user.password = password;
         }
 
         await user.save();
