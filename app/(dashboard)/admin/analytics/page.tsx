@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Settings, TrendingUp, AlertTriangle, CheckCircle, Users } from 'lucide-react';
 import {
   LineChart,
@@ -18,49 +19,56 @@ import {
 } from 'recharts';
 
 export default function AnalyticsPage() {
-  // Attendance trend data
-  const attendanceTrendData = [
-    { day: 'Mon', rate: 88 },
-    { day: 'Tues', rate: 90 },
-    { day: 'Wedn', rate: 85 },
-    { day: 'Thur', rate: 92 },
-    { day: 'Frib', rate: 87 },
-    { day: 'Frida', rate: 91 },
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [heatmapData, setHeatmapData] = useState<{ row: number; col: number; value: number }[]>([]);
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        const res = await fetch('/api/admin/analytics');
+        if (res.ok) setData(await res.json());
+      } catch (e) { console.error(e); }
+      finally { setLoading(false); }
+    };
+    fetchAnalytics();
+
+    // Initialize Heatmap Data
+    const initialHeatmap = Array.from({ length: 5 }, (_, row) =>
+      Array.from({ length: 7 }, (_, col) => ({
+        row,
+        col,
+        value: Math.random() * 100,
+      }))
+    ).flat();
+    setHeatmapData(initialHeatmap);
+  }, []);
+
+  const attendanceTrendData = data?.weeklyTrend || [
+    { day: 'Mon', rate: 0 },
+    { day: 'Tue', rate: 0 },
+    { day: 'Wed', rate: 0 },
+    { day: 'Thu', rate: 0 },
+    { day: 'Fri', rate: 0 },
   ];
 
-  // Grade-wise comparison data
-  const gradeComparisonData = [
-    { grade: 'Grade 9', attendance: 85 },
-    { grade: '8lade 9', attendance: 75 },
-    { grade: '911 10', attendance: 78 },
-    { grade: '933 12', attendance: 68 },
-    { grade: '933 12', attendance: 88 },
-    { grade: '955%', attendance: 95 },
-  ];
+  const gradeComparisonData = data?.subjectStats?.map((s: any) => ({
+    grade: s.subject,
+    attendance: s.count
+  })) || [
+      { grade: 'No Data', attendance: 0 }
+    ];
 
-  // Absence excuse types data
-  const excuseTypesData = [
-    { name: 'Unexcused', value: 35, color: '#ef4444' },
-    { name: 'Sports', value: 20, color: '#fb923c' },
-    { name: 'Sick', value: 25, color: '#22c55e' },
-    { name: 'Family', value: 20, color: '#ef4444' },
+  const excuseTypesData = data?.excuseTypes || [
+    { name: 'Loading...', value: 100, color: '#e2e8f0' },
   ];
-
-  // Heatmap data (simplified representation)
-  const heatmapData = Array.from({ length: 5 }, (_, row) =>
-    Array.from({ length: 7 }, (_, col) => ({
-      row,
-      col,
-      value: Math.random() * 100,
-    }))
-  ).flat();
 
   const getHeatmapColor = (value: number) => {
-    if (value > 80) return 'bg-red-700';
-    if (value > 60) return 'bg-red-500';
-    if (value > 40) return 'bg-red-300';
-    if (value > 20) return 'bg-red-200';
-    return 'bg-red-100';
+    if (value > 80) return 'bg-green-600';
+    if (value > 60) return 'bg-green-400';
+    if (value > 40) return 'bg-amber-400';
+    if (value > 20) return 'bg-orange-400';
+    return 'bg-red-500';
   };
 
   return (
@@ -85,6 +93,14 @@ export default function AnalyticsPage() {
 
       {/* Main Content */}
       <div className="p-8">
+        {loading && (
+          <div className="fixed inset-0 bg-white/50 backdrop-blur-sm z-50 flex items-center justify-center">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-slate-600 font-medium italic">Generating analytics report...</p>
+            </div>
+          </div>
+        )}
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {/* Avg Attendance Rate */}
@@ -92,26 +108,11 @@ export default function AnalyticsPage() {
             <h3 className="text-sm font-semibold text-slate-600 mb-2">Avg. Attendance Rate</h3>
             <div className="flex items-end justify-between">
               <div>
-                <div className="text-4xl font-bold text-green-600 mb-1">92.4%</div>
-                <div className="text-sm text-green-600 flex items-center gap-1">
-                  <TrendingUp className="w-4 h-4" />
-                  +3.5% this month
-                </div>
+                <div className="text-4xl font-bold text-green-600 mb-1">{data?.stats?.avgAttendanceRate || '0.0'}%</div>
+                <div className="text-sm text-slate-500 italic">This current month</div>
               </div>
-              <div className="w-16 h-12">
-                <svg viewBox="0 0 100 50" className="w-full h-full">
-                  <polyline
-                    points="0,40 20,35 40,30 60,25 80,20 100,10"
-                    fill="none"
-                    stroke="#22c55e"
-                    strokeWidth="3"
-                  />
-                  <polyline
-                    points="0,40 20,35 40,30 60,25 80,20 100,10 100,50 0,50"
-                    fill="#22c55e"
-                    fillOpacity="0.2"
-                  />
-                </svg>
+              <div className="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
+                <TrendingUp className="w-6 h-6 text-green-600" />
               </div>
             </div>
           </div>
@@ -119,22 +120,22 @@ export default function AnalyticsPage() {
           {/* Chronic Absenteeism */}
           <div className="bg-white rounded-xl p-6 border border-slate-200 hover:shadow-lg transition-shadow">
             <h3 className="text-sm font-semibold text-slate-600 mb-2">Chronic Absenteeism</h3>
-            <div className="text-4xl font-bold text-red-600 mb-1">47 Students</div>
-            <div className="text-sm text-slate-500">Missed &gt;10%</div>
+            <div className="text-4xl font-bold text-red-600 mb-1">{data?.stats?.chronicCount || 0} Students</div>
+            <div className="text-sm text-slate-500">Attendance &lt; 50%</div>
           </div>
 
           {/* Teacher Compliance */}
           <div className="bg-white rounded-xl p-6 border border-slate-200 hover:shadow-lg transition-shadow">
             <h3 className="text-sm font-semibold text-slate-600 mb-2">Teacher Compliance</h3>
-            <div className="text-4xl font-bold text-blue-600 mb-1">98%</div>
-            <div className="text-sm text-slate-500">Registers on time</div>
+            <div className="text-4xl font-bold text-blue-600 mb-1">{data?.stats?.compliance || 0}%</div>
+            <div className="text-sm text-slate-500">On-time registry</div>
           </div>
 
           {/* At-Risk Students */}
           <div className="bg-white rounded-xl p-6 border border-slate-200 hover:shadow-lg transition-shadow">
             <h3 className="text-sm font-semibold text-slate-600 mb-2">At-Risk Students</h3>
-            <div className="text-4xl font-bold text-orange-600 mb-1">15 Students</div>
-            <div className="text-sm text-slate-500">Attendance drop</div>
+            <div className="text-4xl font-bold text-orange-600 mb-1">{data?.stats?.atRiskCount || 0} Students</div>
+            <div className="text-sm text-slate-500">Attendance &lt; 75%</div>
           </div>
         </div>
 
@@ -172,7 +173,7 @@ export default function AnalyticsPage() {
                 <YAxis stroke="#64748b" />
                 <Tooltip />
                 <Bar dataKey="attendance" radius={[8, 8, 0, 0]}>
-                  {gradeComparisonData.map((entry, index) => (
+                  {gradeComparisonData.map((entry: any, index: number) => (
                     <Cell
                       key={`cell-${index}`}
                       fill={entry.grade === '933 12' ? '#ef4444' : '#3b82f6'}
@@ -187,11 +188,11 @@ export default function AnalyticsPage() {
           <div className="bg-white rounded-xl p-6 border border-slate-200">
             <h3 className="text-lg font-bold text-slate-900 mb-6">Peak Absence Heatmap</h3>
             <div className="grid grid-cols-7 gap-1">
-              {heatmapData.map((cell, idx) => (
+              {(data?.heatmap || heatmapData).map((cell: any, idx: number) => (
                 <div
                   key={idx}
-                  className={`aspect-square rounded ${getHeatmapColor(cell.value)}`}
-                  title={`${Math.round(cell.value)}%`}
+                  className={`aspect-square rounded ${getHeatmapColor(cell.value)} shadow-inner hover:brightness-90 transition-all`}
+                  title={`${Math.round(cell.value)}% attendance`}
                 />
               ))}
             </div>
@@ -211,7 +212,7 @@ export default function AnalyticsPage() {
                   paddingAngle={5}
                   dataKey="value"
                 >
-                  {excuseTypesData.map((entry, index) => (
+                  {excuseTypesData.map((entry: any, index: number) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>

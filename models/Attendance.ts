@@ -16,6 +16,12 @@ const AttendanceSchema = new Schema(
       type: String,
       enum: ['present', 'absent'],
       default: 'absent'
+    },
+    faceVerified: { type: Boolean, default: false },
+    locationVerified: { type: Boolean, default: false },
+    markedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
     }
   },
   { timestamps: true }

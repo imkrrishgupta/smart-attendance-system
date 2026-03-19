@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import axios from "axios";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -11,35 +10,32 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('student');
+  const [rollNumber, setRollNumber] = useState('');
+  const [enrollmentNo, setEnrollmentNo] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
-    
-    try {
-      const res = await axios.post("/api/auth/register", {
-        name,
-        email,
-        password,
-        role
-      });
+    setError('');
 
-      router.push("/login");
-      router.refresh();
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password, role, rollNumber, enrollmentNo })
+    });
 
-    } catch (error: any) {
-        if (error.response) {
-          setError(error.response.data?.error || "Registration failed");
-        } else {
-            setError("Something went wrong. Please try again.");
-        }
-    } finally {
-      setLoading(false);
+    setLoading(false);
+
+    if (!res.ok) {
+      const data = await res.json();
+      setError(data.error || 'Registration failed');
+      return;
     }
 
+    router.push('/login');
+    router.refresh();
   };
 
   return (
@@ -83,7 +79,29 @@ export default function RegisterPage() {
             className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             <option value="student">Student</option>
+            <option value="teacher">Teacher</option>
           </select>
+
+          {role === 'student' && (
+            <>
+              <input
+                type="text"
+                placeholder="Roll Number"
+                value={rollNumber}
+                onChange={(e) => setRollNumber(e.target.value)}
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                required
+              />
+              <input
+                type="text"
+                placeholder="Enrollment Number"
+                value={enrollmentNo}
+                onChange={(e) => setEnrollmentNo(e.target.value)}
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                required
+              />
+            </>
+          )}
 
           {error && (
             <p className="text-red-600 text-sm text-center">{error}</p>

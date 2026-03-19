@@ -1,4 +1,9 @@
 import mongoose from 'mongoose';
+import '@/models/User';
+import '@/models/Session';
+import '@/models/Attendance';
+import '@/models/LeaveRequest';
+import '@/models/AttendanceIssue';
 
 const MONGODB_URI = process.env.MONGODB_URI!;
 

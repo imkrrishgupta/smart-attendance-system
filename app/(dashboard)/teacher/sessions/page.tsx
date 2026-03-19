@@ -1,309 +1,122 @@
 'use client';
 
-import { useState } from 'react';
-import { Filter, CheckCircle, Clock } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { Clock, CheckCircle, Users, Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
-interface Session {
-  id: string;
-  date: string;
-  time: string;
+interface SessionItem {
+  _id: string;
   subject: string;
-  class: string;
-  status: 'scheduled' | 'completed';
+  startTime: string;
+  endTime: string;
+  isActive: boolean;
+  presentCount: number;
+  absentCount: number;
+  totalMarked: number;
 }
 
 export default function Sessions() {
-  const [dateRange, setDateRange] = useState('01 Oct 2023 - 31 Oct 2023');
-  const [selectedSubject, setSelectedSubject] = useState('All Subjects');
-  const [selectedClass, setSelectedClass] = useState('All Classes');
-  const [currentPage, setCurrentPage] = useState(1);
+  const { data: authSession } = useSession();
+  const teacherId = (authSession?.user as any)?.id || null;
+  const [sessions, setSessions] = useState<SessionItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const subjects = [
-    'All Subjects',
-    'Data Structures',
-    'Algorithms',
-    'Database Systems',
-    'Operating Systems',
-  ];
-  const classes = [
-    'All Classes',
-    'CS-A',
-    'CS-B',
-    'CS-C',
-    'IT-A',
-    'IT-B',
-  ];
-
-  const sessionsData: Session[] = [
-    {
-      id: '1',
-      date: 'Oct 26, 2023',
-      time: '10:00 AM - 11:00 AM',
-      subject: 'Data Structures',
-      class: 'CS-A',
-      status: 'scheduled',
-    },
-    {
-      id: '2',
-      date: 'Oct 25, 2023',
-      time: '02:00 PM - 03:00 PM',
-      subject: 'Algorithms',
-      class: 'CS-B',
-      status: 'completed',
-    },
-    {
-      id: '3',
-      date: 'Oct 25, 2023',
-      time: '02:00 PM - 03:00 PM',
-      subject: 'Algorithms',
-      class: 'CS-B',
-      status: 'completed',
-    },
-    {
-      id: '4',
-      date: 'Oct 24, 2023',
-      time: '10:00 AM - 11:00 AM',
-      subject: 'Database Systems',
-      class: 'CS-A',
-      status: 'completed',
-    },
-    {
-      id: '5',
-      date: 'Oct 23, 2023',
-      time: '09:00 AM - 10:00 AM',
-      subject: 'Operating Systems',
-      class: 'IT-B',
-      status: 'completed',
-    },
-    {
-      id: '6',
-      date: 'Oct 22, 2023',
-      time: '01:00 PM - 02:00 PM',
-      subject: 'Data Structures',
-      class: 'IT-A',
-      status: 'completed',
-    },
-  ];
-
-  const itemsPerPage = 6;
-  const totalPages = Math.ceil(sessionsData.length / itemsPerPage);
-  const paginatedData = sessionsData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  useEffect(() => {
+    if (!teacherId) return;
+    setLoading(true);
+    fetch(`/api/attendance/sessions?teacherId=${teacherId}`)
+      .then(r => r.json())
+      .then(data => {
+        setSessions(data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [teacherId]);
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Header */}
       <header className="bg-white border-b border-slate-200">
         <div className="px-8 py-6">
-          <h1 className="text-3xl font-bold text-slate-900">Sessions</h1>
-          <div className="flex items-center gap-2 text-slate-600 mt-2">
-            <Link href="/teacher/dashboard" className="hover:text-slate-900">
-              Home
+          <div className="flex items-center gap-2 text-sm text-slate-500 mb-2">
+            <Link href="/teacher/dashboard" className="hover:text-slate-700 flex items-center gap-1">
+              <ArrowLeft className="w-4 h-4" /> Dashboard
             </Link>
-            <span className="mx-1">›</span>
-            <span>Sessions</span>
+            <span>›</span>
+            <span className="text-slate-700">Sessions</span>
           </div>
+          <h1 className="text-3xl font-bold text-slate-900">Session History</h1>
+          <p className="text-slate-500 mt-1">View all your past and active sessions</p>
         </div>
       </header>
 
-      {/* Main Content */}
-      <div className="p-8">
-        {/* Filters Section */}
-        <div className="bg-white rounded-xl border border-slate-200 p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-            {/* Date Range */}
-            <div>
-              <label className="block text-sm font-semibold text-slate-900 mb-2">
-                Date Range:
-              </label>
-              <input
-                type="text"
-                value={dateRange}
-                onChange={(e) => setDateRange(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                placeholder="01 Oct 2023 - 31 Oct 2023"
-              />
-            </div>
-
-            {/* Subject Filter */}
-            <div>
-              <label className="block text-sm font-semibold text-slate-900 mb-2">
-                Subject:
-              </label>
-              <select
-                value={selectedSubject}
-                onChange={(e) => setSelectedSubject(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              >
-                {subjects.map((subj) => (
-                  <option key={subj} value={subj}>
-                    {subj}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Class/Section Filter */}
-            <div>
-              <label className="block text-sm font-semibold text-slate-900 mb-2">
-                Class/Section:
-              </label>
-              <select
-                value={selectedClass}
-                onChange={(e) => setSelectedClass(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              >
-                {classes.map((cls) => (
-                  <option key={cls} value={cls}>
-                    {cls}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Filter Button */}
-            <div>
-              <button className="w-full px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
-                <Filter className="w-5 h-5" />
-                Filter
-              </button>
-            </div>
+      <div className="p-8 max-w-6xl mx-auto">
+        {loading ? (
+          <div className="bg-white rounded-xl border p-8 flex items-center justify-center text-slate-400">
+            <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading sessions…
           </div>
-        </div>
-
-        {/* Sessions Table */}
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="overflow-x-auto">
+        ) : sessions.length === 0 ? (
+          <div className="bg-white rounded-xl border p-8 text-center text-slate-400">
+            No sessions found. Create a session from the <Link href="/teacher/dashboard" className="text-blue-600 underline">Dashboard</Link>.
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl border overflow-hidden">
             <table className="w-full">
-              <thead className="bg-slate-100">
+              <thead className="bg-slate-50">
                 <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 border-b border-slate-200">
-                    Date
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 border-b border-slate-200">
-                    Time
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 border-b border-slate-200">
-                    Subject
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 border-b border-slate-200">
-                    Class
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 border-b border-slate-200">
-                    Status
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 border-b border-slate-200">
-                    Action
-                  </th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Subject</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Date</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Time</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Status</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Attendance</th>
+                  <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500 uppercase">Action</th>
                 </tr>
               </thead>
-              <tbody>
-                {paginatedData.map((session) => (
-                  <tr key={session.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 text-sm text-slate-900 font-medium">
-                      {session.date}
+              <tbody className="divide-y divide-slate-100">
+                {sessions.map(s => (
+                  <tr key={s._id} className="hover:bg-slate-50 transition">
+                    <td className="px-5 py-4 font-medium text-slate-800">{s.subject}</td>
+                    <td className="px-5 py-4 text-sm text-slate-500">
+                      {new Date(s.startTime).toLocaleDateString()}
                     </td>
-                    <td className="px-6 py-4 text-sm text-slate-600">
-                      {session.time}
+                    <td className="px-5 py-4 text-sm text-slate-500 flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5 text-slate-400" />
+                      {new Date(s.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {s.endTime && ` — ${new Date(s.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
                     </td>
-                    <td className="px-6 py-4 text-sm text-slate-600">
-                      {session.subject}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-600">
-                      {session.class}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`px-4 py-2 rounded-full text-sm font-semibold ${
-                          session.status === 'completed'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-slate-300 text-slate-700'
-                        }`}
-                      >
-                        {session.status === 'completed'
-                          ? 'Completed'
-                          : 'Scheduled'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      {session.status === 'scheduled' ? (
-                        <button className="px-6 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors border-2 border-green-600">
-                          Mark Attendance
-                        </button>
+                    <td className="px-5 py-4">
+                      {s.isActive ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                          <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" /> Live
+                        </span>
                       ) : (
-                        <button className="px-6 py-2 bg-white text-slate-700 rounded-lg font-semibold border border-slate-300 hover:bg-slate-50 transition-colors">
-                          View Attendance
-                        </button>
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-semibold">
+                          <CheckCircle className="w-3 h-3" /> Completed
+                        </span>
                       )}
+                    </td>
+                    <td className="px-5 py-4 text-sm">
+                      <div className="flex items-center gap-1">
+                        <Users className="w-3.5 h-3.5 text-slate-400" />
+                        <span className="text-green-600 font-semibold">{s.presentCount}</span>
+                        <span className="text-slate-300">/</span>
+                        <span className="text-slate-600">{s.totalMarked}</span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      <Link
+                        href={`/teacher/attendance?sessionId=${s._id}`}
+                        className="text-xs px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg font-medium hover:bg-blue-200 transition"
+                      >
+                        View Details
+                      </Link>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-
-          {/* Pagination */}
-          <div className="flex items-center justify-center gap-2 px-6 py-4 border-t border-slate-200">
-            <button
-              onClick={() => setCurrentPage(1)}
-              disabled={currentPage === 1}
-              className="px-2 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              ‹‹
-            </button>
-            <button
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-              className="px-2 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              ‹
-            </button>
-
-            {Array.from({ length: Math.min(3, totalPages) }, (_, i) => (
-              <button
-                key={i + 1}
-                onClick={() => setCurrentPage(i + 1)}
-                className={`px-3 py-2 rounded-lg transition-colors font-medium ${
-                  currentPage === i + 1
-                    ? 'bg-blue-600 text-white'
-                    : 'text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                {i + 1}
-              </button>
-            ))}
-
-            {totalPages > 3 && currentPage > 3 && (
-              <>
-                <span className="text-slate-400">...</span>
-                <button
-                  onClick={() => setCurrentPage(totalPages)}
-                  className="px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-                >
-                  {totalPages}
-                </button>
-              </>
-            )}
-
-            <button
-              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-              disabled={currentPage === totalPages}
-              className="px-2 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              ›
-            </button>
-            <button
-              onClick={() => setCurrentPage(totalPages)}
-              disabled={currentPage === totalPages}
-              className="px-2 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              ››
-            </button>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

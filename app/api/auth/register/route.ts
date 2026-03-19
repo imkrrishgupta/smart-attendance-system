@@ -5,38 +5,59 @@ import { User } from '@/models/User';
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password, role } = await req.json();
+    const { name, email, password, role, rollNumber, enrollmentNo } = await req.json();
 
     if (!name || !email || !password || !role) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
     }
 
+    // Additional validation for students
+    if (role === 'student' && (!rollNumber || !enrollmentNo)) {
+      return NextResponse.json({ error: 'Roll number and Enrollment number are required for students' }, { status: 400 });
+    }
+
     await dbConnect();
 
-    const existing = await User.findOne({ email });
-    if (existing) {
+    const existingEmail = await User.findOne({ email });
+    if (existingEmail) {
       return NextResponse.json({ error: 'User already exists' }, { status: 400 });
+    }
+
+    if (role === 'student') {
+      const existingRollNo = await User.findOne({ rollNumber });
+      if (existingRollNo) {
+        return NextResponse.json({ error: 'Roll number already exists' }, { status: 400 });
+      }
     }
 
     const hashed = await bcrypt.hash(password, 10);
 
-    const user = await User.create({
+    const userData: any = {
       name,
       email,
       password: hashed,
       role
-    });
+    };
+
+    if (role === 'student') {
+      userData.rollNumber = rollNumber;
+      userData.enrollmentNo = enrollmentNo;
+    }
+
+    const user = await User.create(userData);
 
     return NextResponse.json(
       {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        ...(role === 'student' && { rollNumber: user.rollNumber, enrollmentNo: user.enrollmentNo })
       },
       { status: 201 }
     );
-  } catch {
+  } catch (error) {
+    console.error('Registration error:', error);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }
