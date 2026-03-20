@@ -90,9 +90,15 @@ export default function Sessions() {
                           <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" /> Live
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-semibold">
-                          <CheckCircle className="w-3 h-3" /> Completed
-                        </span>
+                        new Date() < new Date(s.startTime) ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-600 rounded-full text-xs font-semibold border border-amber-100">
+                             <Clock className="w-3 h-3 text-amber-500" /> Upcoming
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-semibold">
+                            <CheckCircle className="w-3 h-3" /> Completed
+                          </span>
+                        )
                       )}
                     </td>
                     <td className="px-5 py-4 text-sm">

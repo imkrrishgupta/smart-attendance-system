@@ -7,7 +7,11 @@ const LeaveRequestSchema = new Schema(
             ref: 'User',
             required: true
         },
-        date: {
+        startDate: {
+            type: Date,
+            required: true
+        },
+        endDate: {
             type: Date,
             required: true
         },
@@ -24,4 +28,7 @@ const LeaveRequestSchema = new Schema(
     { timestamps: true }
 );
 
-export const LeaveRequest = models.LeaveRequest || model('LeaveRequest', LeaveRequestSchema);
+if (models.LeaveRequestV2) {
+    delete (models as any).LeaveRequestV2;
+}
+export const LeaveRequest = model('LeaveRequestV2', LeaveRequestSchema, 'leaverequests');

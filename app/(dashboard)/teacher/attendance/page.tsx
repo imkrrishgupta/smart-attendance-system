@@ -11,7 +11,8 @@ import {
   UserX,
   RefreshCw,
   Loader2,
-  ArrowLeft
+  ArrowLeft,
+  Clock
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -31,6 +32,8 @@ interface SessionDetail {
   startTime: string;
   endTime: string;
   isActive: boolean;
+  branch?: string;
+  semester?: string;
 }
 
 import { Suspense } from 'react';
@@ -105,7 +108,20 @@ function TeacherAttendanceContent() {
             <span>›</span>
             <span className="text-slate-700">Attendance</span>
           </div>
-          <h1 className="text-3xl font-bold text-slate-900">Attendance Management</h1>
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Attendance Management</h1>
+              {sessionInfo && (
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-md text-[10px] font-black uppercase tracking-widest border border-indigo-100 shadow-sm">
+                    {sessionInfo.branch || 'General'} // Sem {sessionInfo.semester || 'All'}
+                  </span>
+                  <span className="text-slate-300 font-bold">/</span>
+                  <span className="text-slate-500 text-xs font-black uppercase tracking-widest font-mono opacity-80">{sessionInfo.subject}</span>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </header>
 
@@ -116,13 +132,13 @@ function TeacherAttendanceContent() {
           <select
             value={selectedSessionId}
             onChange={e => setSelectedSessionId(e.target.value)}
-            className="w-full px-4 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-green-500"
+            className="w-full px-4 py-2.5 border rounded-lg text-sm text-slate-900 focus:ring-2 focus:ring-green-500"
           >
             <option value="">— Choose a session —</option>
             {sessions.map(s => (
               <option key={s._id} value={s._id}>
                 {s.subject} — {new Date(s.startTime).toLocaleDateString()} {new Date(s.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                {s.isActive ? ' (LIVE)' : ''}
+                {s.isActive ? ' (LIVE)' : (new Date() < new Date(s.startTime) ? ' (UPCOMING)' : ' (COMPLETED)')}
               </option>
             ))}
           </select>
@@ -201,6 +217,10 @@ function TeacherAttendanceContent() {
                           {a.status === 'present' ? (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
                               <CheckCircle className="w-3 h-3" /> Present
+                            </span>
+                          ) : a.status === 'pending' ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-600 rounded-full text-xs font-semibold border border-amber-100">
+                              <Clock className="w-3 h-3 text-amber-500" /> Scheduled
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-semibold">

@@ -27,5 +27,7 @@ const AttendanceSchema = new Schema(
   { timestamps: true }
 );
 
-export const Attendance =
-  models.Attendance || model('Attendance', AttendanceSchema);
+if (models.Attendance) {
+  delete (models as any).Attendance;
+}
+export const Attendance = model('Attendance', AttendanceSchema);

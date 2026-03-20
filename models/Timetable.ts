@@ -18,5 +18,7 @@ const TimetableSchema = new Schema(
   { timestamps: true }
 );
 
-export const Timetable =
-  models.Timetable || model('Timetable', TimetableSchema);
+if (models.Timetable) {
+  delete (models as any).Timetable;
+}
+export const Timetable = model('Timetable', TimetableSchema);

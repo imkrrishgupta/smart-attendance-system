@@ -4,9 +4,9 @@ import { LeaveRequest } from '@/models/LeaveRequest';
 
 export async function POST(req: Request) {
     try {
-        const { teacherId, date, reason } = await req.json();
+        const { teacherId, startDate, endDate, reason } = await req.json();
 
-        if (!teacherId || !date || !reason) {
+        if (!teacherId || !startDate || !endDate || !reason) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
@@ -14,9 +14,10 @@ export async function POST(req: Request) {
 
         const leaveRequest = await LeaveRequest.create({
             teacherId,
-            date: new Date(date),
+            startDate: new Date(startDate),
+            endDate: new Date(endDate),
             reason,
-            status: 'pending' // ensure default is set
+            status: 'pending'
         });
 
         return NextResponse.json(leaveRequest, { status: 201 });

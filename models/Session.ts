@@ -22,4 +22,7 @@ const SessionSchema = new Schema(
   { timestamps: true }
 );
 
-export const Session = models.Session || model('Session', SessionSchema);
+if (models.Session) {
+  delete (models as any).Session;
+}
+export const Session = model('Session', SessionSchema);
