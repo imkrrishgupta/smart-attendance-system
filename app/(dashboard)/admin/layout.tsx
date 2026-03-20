@@ -1,25 +1,23 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { 
-  LayoutDashboard, 
-  Users, 
-  Calendar, 
-  BarChart3, 
+import {
+  LayoutDashboard,
+  Users,
+  GraduationCap,
+  Calendar,
+  BarChart3,
+  FileText,
   Settings,
   LogOut,
   Shield,
   Menu,
-  X
+  X,
 } from 'lucide-react';
 import { useState } from 'react';
 import { signOut } from 'next-auth/react';
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -27,42 +25,39 @@ export default function AdminLayout({
   const navigation = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
     { name: 'Teachers', href: '/admin/teachers', icon: Users },
+    { name: 'Students', href: '/admin/students', icon: GraduationCap },
     { name: 'Timetable', href: '/admin/timetable', icon: Calendar },
+    { name: 'Leave Requests', href: '/admin/leave-requests', icon: FileText },
     { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
   ];
 
-  const handleLogout = () => {
-    if (confirm('Are you sure you want to logout?')) {
-      router.push('/');
-    }
-  };
-
   return (
     <div className="flex h-screen bg-slate-50">
-      <aside className={`${
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      } fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 transition-transform duration-300 lg:translate-x-0 lg:static lg:inset-auto`}>
+      <aside
+        className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          } fixed inset-y-0 left-0 z-50 w-60 bg-slate-900 transition-transform duration-300 lg:translate-x-0 lg:static lg:inset-auto`}
+      >
         <div className="flex h-full flex-col">
-          <div className="flex items-center justify-between p-6 border-b border-slate-800">
+          <div className="flex items-center justify-between px-5 py-5 border-b border-slate-800">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
-                <Shield className="w-6 h-6 text-white" />
+              <div className="w-9 h-9 bg-indigo-600 rounded-lg flex items-center justify-center">
+                <Shield className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h2 className="text-white font-bold">Admin Panel</h2>
-                <p className="text-slate-400 text-xs">Management</p>
+                <h2 className="text-white font-semibold text-sm">Admin Panel</h2>
+                <p className="text-slate-500 text-xs">Management</p>
               </div>
             </div>
             <button
               onClick={() => setSidebarOpen(false)}
               className="lg:hidden text-slate-400 hover:text-white"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5" />
             </button>
           </div>
 
-          <nav className="flex-1 px-4 py-6 space-y-2">
+          <nav className="flex-1 px-3 py-4 space-y-1">
             {navigation.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
@@ -73,25 +68,24 @@ export default function AdminLayout({
                     router.push(item.href);
                     setSidebarOpen(false);
                   }}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                    isActive
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive
                       ? 'bg-indigo-600 text-white'
-                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                  }`}
+                      : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                    }`}
                 >
-                  <Icon className="w-5 h-5" />
+                  <Icon className="w-4 h-4" />
                   {item.name}
                 </button>
               );
             })}
           </nav>
 
-          <div className="p-4 border-t border-slate-800">
+          <div className="p-3 border-t border-slate-800">
             <button
-              onClick={()=>signOut()}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-300 hover:bg-red-600 hover:text-white transition-colors"
+              onClick={() => signOut()}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:bg-red-600/90 hover:text-white transition-colors"
             >
-              <LogOut className="w-5 h-5" />
+              <LogOut className="w-4 h-4" />
               Logout
             </button>
           </div>
@@ -99,23 +93,20 @@ export default function AdminLayout({
       </aside>
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="lg:hidden bg-white border-b border-slate-200 px-6 py-4">
+        <header className="lg:hidden bg-white border-b border-slate-200 px-5 py-3">
           <button
             onClick={() => setSidebarOpen(true)}
             className="text-slate-600 hover:text-slate-900"
           >
-            <Menu className="w-6 h-6" />
+            <Menu className="w-5 h-5" />
           </button>
         </header>
-
-        <main className="flex-1 overflow-y-auto">
-          {children}
-        </main>
+        <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
 
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/40 z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}

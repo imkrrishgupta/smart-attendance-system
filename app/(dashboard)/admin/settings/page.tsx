@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
+import Link from 'next/link';
 import {
     User,
     Settings,
@@ -11,7 +12,10 @@ import {
     Save,
     CheckCircle,
     AlertCircle,
-    LogOut
+    ChevronRight,
+    Lock,
+    Cpu,
+    Loader2
 } from 'lucide-react';
 
 export default function AdminSettingsPage() {
@@ -58,194 +62,229 @@ export default function AdminSettingsPage() {
             });
 
             if (res.ok) {
-                setSuccess('Settings updated successfully!');
+                setSuccess('Security credentials and profile updated successfully!');
                 await update();
             } else {
                 const data = await res.json();
-                setError(data.error || 'Failed to update settings');
+                setError(data.error || 'Failed to sync settings with vault');
             }
         } catch (err) {
-            setError('An error occurred. Please try again.');
+            setError('Operational error occurred during synchronization');
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen bg-slate-50">
-            <header className="bg-white border-b border-slate-200">
-                <div className="px-8 py-6">
-                    <h1 className="text-3xl font-bold text-slate-900">Admin Settings</h1>
-                    <p className="text-slate-600 mt-1">Manage your account and system configurations</p>
+        <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
+            {/* Header */}
+            <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
+                <div className="px-8 py-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div>
+                        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">System Preferences</h1>
+                        <div className="flex items-center gap-2 text-slate-500 mt-1 text-sm font-medium">
+                            <Link href="/admin/dashboard" className="hover:text-indigo-600 transition-colors">Portal</Link>
+                            <span className="text-slate-300">/</span>
+                            <span className="text-slate-900 font-semibold italic">Control Center</span>
+                        </div>
+                    </div>
                 </div>
             </header>
 
-            <div className="p-8 max-w-4xl mx-auto">
-                <form onSubmit={handleSubmit} className="space-y-8">
-                    {/* Profile Section */}
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                        <div className="p-6 border-b border-slate-200 bg-slate-50/50 flex items-center gap-3">
-                            <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                                <User className="w-5 h-5 text-indigo-600" />
-                            </div>
-                            <div>
-                                <h2 className="text-lg font-bold text-slate-900">Profile Information</h2>
-                                <p className="text-sm text-slate-500">Update your personal details</p>
+            <div className="p-8 max-w-5xl mx-auto pb-24">
+                <form onSubmit={handleSubmit} className="space-y-12">
+                    {/* Identity Module */}
+                    <div className="bg-white rounded-[48px] border border-slate-200 shadow-sm overflow-hidden group transition-all duration-500 hover:shadow-2xl hover:shadow-slate-200/50">
+                        <div className="p-10 border-b border-slate-100 bg-white flex items-center justify-between">
+                            <div className="flex items-center gap-6">
+                                <div className="w-16 h-16 bg-slate-900 rounded-3xl flex items-center justify-center shadow-2xl shadow-slate-200 group-hover:scale-105 transition-transform duration-500">
+                                    <User className="w-8 h-8 text-white" />
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase tracking-widest">Identity Profile</h2>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Official administrator credentials</p>
+                                </div>
                             </div>
                         </div>
-                        <div className="p-6 grid gap-6">
-                            <div className="grid sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-2 text-left">Full Name</label>
+                        <div className="p-10 grid gap-8 transition-all duration-500">
+                            <div className="grid md:grid-cols-2 gap-8">
+                                <div className="space-y-2">
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 text-left">Legal Full Name</label>
                                     <input
                                         type="text"
                                         value={formData.name}
                                         onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                        className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-400"
+                                        placeholder="Administrator Name"
+                                        className="w-full px-6 py-5 bg-slate-50 border border-slate-200 rounded-[24px] text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500 transition-all placeholder:text-slate-300 shadow-sm"
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-2 text-left">Email Address</label>
-                                    <input
-                                        type="email"
-                                        value={formData.email}
-                                        disabled
-                                        className="w-full px-4 py-3 rounded-lg border border-slate-100 bg-slate-50 text-slate-500 outline-none cursor-not-allowed"
-                                    />
+                                <div className="space-y-2 text-left">
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 text-left">Internal Registry Email</label>
+                                    <div className="relative">
+                                        <input
+                                            type="email"
+                                            value={formData.email}
+                                            disabled
+                                            className="w-full px-6 py-5 bg-slate-50 border border-slate-100 text-slate-400 rounded-[24px] text-sm font-bold outline-none cursor-not-allowed italic shadow-inner"
+                                        />
+                                        <Lock className="absolute right-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Security Section */}
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                        <div className="p-6 border-b border-slate-200 bg-slate-50/50 flex items-center gap-3">
-                            <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                                <Shield className="w-5 h-5 text-red-600" />
-                            </div>
-                            <div>
-                                <h2 className="text-lg font-bold text-slate-900">Security</h2>
-                                <p className="text-sm text-slate-500">Change your login password</p>
+                    {/* Security Subsystem */}
+                    <div className="bg-white rounded-[48px] border border-slate-200 shadow-sm overflow-hidden group transition-all duration-500 hover:shadow-2xl hover:shadow-red-50">
+                        <div className="p-10 border-b border-slate-100 bg-white flex items-center justify-between">
+                            <div className="flex items-center gap-6">
+                                <div className="w-16 h-16 bg-red-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-red-100 group-hover:scale-105 transition-transform duration-500">
+                                    <Shield className="w-8 h-8 text-white" />
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase tracking-widest">Access Control</h2>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Encryption & core security tokens</p>
+                                </div>
                             </div>
                         </div>
-                        <div className="p-6 grid gap-6">
-                            <div className="grid sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-2 text-left">Current Password</label>
+                        <div className="p-10 grid gap-8 transition-all duration-500">
+                            <div className="grid md:grid-cols-2 gap-8">
+                                <div className="space-y-2">
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 text-left">Verified Password</label>
                                     <input
                                         type="password"
-                                        placeholder="••••••••"
+                                        placeholder="Current Identity Token"
                                         value={formData.currentPassword}
                                         onChange={e => setFormData({ ...formData, currentPassword: e.target.value })}
-                                        className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-400"
+                                        className="w-full px-6 py-5 bg-slate-50 border border-slate-200 rounded-[24px] text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500 transition-all placeholder:text-slate-300 shadow-sm"
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-2 text-left">New Password</label>
+                                <div className="space-y-2">
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 text-left">New Security Token</label>
                                     <input
                                         type="password"
-                                        placeholder="Leave blank to keep same"
+                                        placeholder="Leave blank to maintain current"
                                         value={formData.newPassword}
                                         onChange={e => setFormData({ ...formData, newPassword: e.target.value })}
-                                        className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-400"
+                                        className="w-full px-6 py-5 bg-slate-50 border border-slate-200 rounded-[24px] text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500 transition-all placeholder:text-slate-300 shadow-sm"
                                     />
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* System Config Section */}
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                        <div className="p-6 border-b border-slate-200 bg-slate-50/50 flex items-center gap-3">
-                            <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
-                                <Settings className="w-5 h-5 text-amber-600" />
-                            </div>
-                            <div>
-                                <h2 className="text-lg font-bold text-slate-900">System Configuration</h2>
-                                <p className="text-sm text-slate-500">Default settings for new sessions</p>
+                    {/* Operational Core (Config) */}
+                    <div className="bg-white rounded-[48px] border border-slate-200 shadow-sm overflow-hidden group transition-all duration-500 hover:shadow-2xl hover:shadow-indigo-50">
+                        <div className="p-10 border-b border-slate-100 bg-white flex items-center justify-between">
+                            <div className="flex items-center gap-6">
+                                <div className="w-16 h-16 bg-indigo-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-indigo-100 group-hover:scale-105 transition-transform duration-500">
+                                    <Cpu className="w-8 h-8 text-white" />
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase tracking-widest">Internal Engine</h2>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">System-wide operational parameters</p>
+                                </div>
                             </div>
                         </div>
-                        <div className="p-6 grid gap-6">
-                            <div className="grid sm:grid-cols-2 gap-6">
-                                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-100">
-                                    <div className="flex items-center gap-3">
-                                        <MapPin className="w-5 h-5 text-slate-400" />
+                        <div className="p-10 space-y-8 transition-all duration-500">
+                            <div className="grid md:grid-cols-2 gap-8">
+                                <div className="flex items-center justify-between p-8 bg-slate-50 rounded-[32px] border border-slate-100 group/item hover:bg-white hover:border-indigo-600 transition-all duration-300 shadow-sm hover:shadow-xl hover:shadow-indigo-50/50">
+                                    <div className="flex items-center gap-5">
+                                        <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center border border-slate-100 shadow-sm group-hover/item:bg-indigo-50 group-hover/item:border-indigo-100 transition-colors">
+                                            <MapPin className="w-6 h-6 text-indigo-500" />
+                                        </div>
                                         <div>
-                                            <p className="text-sm font-bold text-slate-800">Geo-fence Radius</p>
-                                            <p className="text-xs text-slate-500">Default allowed distance (m)</p>
+                                            <p className="text-sm font-bold text-slate-900 tracking-tight">Geo-Fence Radius</p>
+                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Allowed distance (meters)</p>
                                         </div>
                                     </div>
                                     <input
                                         type="number"
                                         value={formData.geoRadius}
                                         onChange={e => setFormData({ ...formData, geoRadius: e.target.value })}
-                                        className="w-20 px-3 py-2 rounded-md border border-slate-200 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none"
+                                        className="w-24 px-5 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-black text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none text-center shadow-inner"
                                     />
                                 </div>
 
-                                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-100">
-                                    <div className="flex items-center gap-3">
-                                        <Clock className="w-5 h-5 text-slate-400" />
+                                <div className="flex items-center justify-between p-8 bg-slate-50 rounded-[32px] border border-slate-100 group/item hover:bg-white hover:border-indigo-600 transition-all duration-300 shadow-sm hover:shadow-xl hover:shadow-indigo-50/50">
+                                    <div className="flex items-center gap-5">
+                                        <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center border border-slate-100 shadow-sm group-hover/item:bg-amber-50 group-hover/item:border-amber-100 transition-colors">
+                                            <Clock className="w-6 h-6 text-amber-500" />
+                                        </div>
                                         <div>
-                                            <p className="text-sm font-bold text-slate-800">Session Duration</p>
-                                            <p className="text-xs text-slate-500">Default active time (min)</p>
+                                            <p className="text-sm font-bold text-slate-900 tracking-tight">Session Lifespan</p>
+                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Default duration (minutes)</p>
                                         </div>
                                     </div>
                                     <input
                                         type="number"
                                         value={formData.sessionDuration}
                                         onChange={e => setFormData({ ...formData, sessionDuration: e.target.value })}
-                                        className="w-20 px-3 py-2 rounded-md border border-slate-200 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none"
+                                        className="w-24 px-5 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-black text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none text-center shadow-inner"
                                     />
                                 </div>
 
-                                <div className="sm:col-span-2 flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-100">
-                                    <div className="flex items-center gap-3">
-                                        <CheckCircle className="w-5 h-5 text-green-500" />
+                                <div className="md:col-span-2 flex items-center justify-between p-8 bg-slate-50 rounded-[32px] border border-slate-100 group/item hover:bg-white hover:border-green-600 transition-all duration-300 shadow-sm hover:shadow-xl hover:shadow-green-50/50">
+                                    <div className="flex items-center gap-5">
+                                        <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center border border-slate-100 shadow-sm group-hover/item:bg-green-50 group-hover/item:border-green-100 transition-colors">
+                                            <CheckCircle className="w-6 h-6 text-green-500" />
+                                        </div>
                                         <div>
-                                            <p className="text-sm font-bold text-slate-800">Auto-Deactivation</p>
-                                            <p className="text-xs text-slate-500">Automatically stop sessions after end time</p>
+                                            <p className="text-sm font-bold text-slate-900 tracking-tight">Auto-Shutdown Protocol</p>
+                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Deactivate sessions upon expiration</p>
                                         </div>
                                     </div>
                                     <button
                                         type="button"
                                         onClick={() => setFormData({ ...formData, autoDeactivate: !formData.autoDeactivate })}
-                                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${formData.autoDeactivate ? 'bg-indigo-600' : 'bg-slate-200'}`}
+                                        className={`relative inline-flex h-8 w-14 flex-shrink-0 cursor-pointer rounded-full border-4 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${formData.autoDeactivate ? 'bg-green-500' : 'bg-slate-200'}`}
                                     >
-                                        <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${formData.autoDeactivate ? 'translate-x-5' : 'translate-x-0'}`} />
+                                        <span className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-xl ring-0 transition duration-300 ease-in-out ${formData.autoDeactivate ? 'translate-x-6' : 'translate-x-0'}`} />
                                     </button>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Feedback Messages */}
+                    {/* Feedback Integration */}
                     {error && (
-                        <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3 text-red-700">
-                            <AlertCircle className="w-5 h-5" />
-                            <p className="text-sm font-medium">{error}</p>
+                        <div className="p-8 bg-red-50 border border-red-100 rounded-[32px] flex items-center gap-5 text-red-700 animate-in slide-in-from-top-4 duration-300 shadow-sm">
+                            <div className="w-12 h-12 bg-red-100 rounded-2xl flex items-center justify-center flex-shrink-0 border border-red-200">
+                                <AlertCircle className="w-7 h-7 text-red-600" />
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-widest opacity-60">System Error</p>
+                                <p className="text-sm font-bold tracking-tight">{error}</p>
+                            </div>
                         </div>
                     )}
                     {success && (
-                        <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3 text-green-700">
-                            <CheckCircle className="w-5 h-5" />
-                            <p className="text-sm font-medium">{success}</p>
+                        <div className="p-8 bg-green-50 border border-green-100 rounded-[32px] flex items-center gap-5 text-green-700 animate-in slide-in-from-top-4 duration-300 shadow-sm">
+                            <div className="w-12 h-12 bg-green-100 rounded-2xl flex items-center justify-center flex-shrink-0 border border-green-200">
+                                <CheckCircle className="w-7 h-7 text-green-600" />
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Protocol Success</p>
+                                <p className="text-sm font-bold tracking-tight">{success}</p>
+                            </div>
                         </div>
                     )}
 
-                    {/* Submit Action */}
-                    <div className="flex justify-end pt-4 pb-12">
+                    {/* Execution Action */}
+                    <div className="flex justify-end pt-4">
                         <button
                             type="submit"
                             disabled={loading}
-                            className="px-8 py-4 bg-indigo-600 text-white rounded-xl font-bold flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="group relative px-10 py-6 bg-indigo-600 text-white rounded-[24px] font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-indigo-200 hover:bg-indigo-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 flex items-center gap-4 overflow-hidden"
                         >
+                            <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
                             {loading ? (
-                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                <Loader2 className="w-6 h-6 animate-spin" />
                             ) : (
-                                <Save className="w-5 h-5" />
+                                <Save className="w-6 h-6 relative z-10" />
                             )}
-                            Save Configuration
+                            <span className="relative z-10 font-black">{loading ? 'Syncing...' : 'Commit Preferences'}</span>
+                            <ChevronRight className="w-4 h-4 relative z-10 group-hover:translate-x-1 transition-transform" />
                         </button>
                     </div>
                 </form>

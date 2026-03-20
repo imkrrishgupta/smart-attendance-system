@@ -18,28 +18,38 @@ export async function GET(
             return NextResponse.json({ error: 'Session not found' }, { status: 404 });
         }
 
+        const targetBranch = (session.branch || '').trim();
+        const targetSemester = (session.semester || '').trim();
+
+        console.log(`[Attendance API] Fetching students for Branch: "${targetBranch}", Sem: "${targetSemester}"`);
+
         // Fetch all students for this session's branch and semester
         const allStudents = await User.find({
             role: 'student',
-            branch: session.branch,
-            semester: session.semester
+            branch: { $regex: new RegExp(`^${targetBranch}$`, 'i') },
+            semester: { $regex: new RegExp(`^${targetSemester}$`, 'i') }
         }).select('name email rollNumber');
+
+        console.log(`[Attendance API] Found ${allStudents.length} students matching Branch: "${targetBranch}", Sem: "${targetSemester}"`);
 
         // Fetch existing attendance records
         const attendanceRecords = await Attendance.find({ sessionId: id })
             .populate('studentId', 'name email rollNumber')
             .populate('markedBy', 'name');
 
+        // Check if session is yet to start
+        const isUpcoming = !session.isActive && new Date() < new Date(session.startTime);
+
         // Merge: ensure every student in the class has a record (real or virtual)
         const finalAttendance = allStudents.map((student: any) => {
             const record = attendanceRecords.find((r: any) => r.studentId?._id.toString() === student._id.toString());
             if (record) return record;
 
-            // Virtual absent record if none exists
+            // Virtual record if none exists
             return {
                 _id: `virtual-${student._id}`,
                 studentId: student,
-                status: 'absent',
+                status: isUpcoming ? 'pending' : 'absent',
                 faceVerified: false,
                 locationVerified: false,
                 createdAt: session.startTime // Default to session start

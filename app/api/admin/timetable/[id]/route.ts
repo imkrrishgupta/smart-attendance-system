@@ -5,11 +5,11 @@ import { Timetable } from '@/models/Timetable';
 // DELETE /api/admin/timetable/[id] — remove a timetable entry
 export async function DELETE(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         await dbConnect();
-        const { id } = params;
+        const { id } = await params;
 
         const deletedEntry = await Timetable.findByIdAndDelete(id);
 

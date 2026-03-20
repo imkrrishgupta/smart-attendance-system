@@ -1,0 +1,149 @@
+﻿
+D:\smart-attendance-system\smart-attendance-system\app\(dashboard)\student\attendance-history\page.tsx
+   8:3   warning  'CheckCircle' is defined but never used                                                                             @typescript-eslint/no-unused-vars
+  11:3   warning  'TrendingUp' is defined but never used                                                                              @typescript-eslint/no-unused-vars
+  15:3   warning  'BookOpen' is defined but never used                                                                                @typescript-eslint/no-unused-vars
+  39:39  error    Unexpected any. Specify a different type                                                                            @typescript-eslint/no-explicit-any
+  65:6   warning  React Hook useEffect has a missing dependency: 'fetchAttendance'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+D:\smart-attendance-system\smart-attendance-system\app\(dashboard)\student\dashboard\page.tsx
+    3:31  warning  'useRef' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-unused-vars
+   12:3   warning  'TrendingUp' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 @typescript-eslint/no-unused-vars
+   13:3   warning  'Award' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      @typescript-eslint/no-unused-vars
+   20:3   warning  'Zap' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+   24:3   warning  'ArrowRight' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 @typescript-eslint/no-unused-vars
+   48:39  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-explicit-any
+   50:36  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-explicit-any
+   51:36  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-explicit-any
+   52:38  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-explicit-any
+   74:7   error    Error: Cannot access variable before it is declared
+
+`fetchActiveSessions` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+D:\smart-attendance-system\smart-attendance-system\app\(dashboard)\student\dashboard\page.tsx:74:7
+  72 |   useEffect(() => {
+  73 |     if (studentId) {
+> 74 |       fetchActiveSessions();
+     |       ^^^^^^^^^^^^^^^^^^^ `fetchActiveSessions` accessed before it is declared
+  75 |       fetchAttendanceStats();
+  76 |       checkRegistration();
+  77 |     }
+
+D:\smart-attendance-system\smart-attendance-system\app\(dashboard)\student\dashboard\page.tsx:90:3
+   88 |   };
+   89 |
+>  90 |   const fetchActiveSessions = async () => {
+      |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>  91 |     try {
+      | ^^^^^^^^^
+>  92 |       const res = await fetch('/api/attendance/sessions');
+      ΓÇª
+      | ^^^^^^^^^
+> 112 |     }
+      | ^^^^^^^^^
+> 113 |   };
+      | ^^^^^ `fetchActiveSessions` is declared here
+  114 |
+  115 |   const fetchAttendanceStats = async () => {
+  116 |     try {                                                                                                                                                                                                                                           react-hooks/immutability
+   75:7   error    Error: Cannot access variable before it is declared
+
+`fetchAttendanceStats` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+D:\smart-attendance-system\smart-attendance-system\app\(dashboard)\student\dashboard\page.tsx:75:7
+  73 |     if (studentId) {
+  74 |       fetchActiveSessions();
+> 75 |       fetchAttendanceStats();
+     |       ^^^^^^^^^^^^^^^^^^^^ `fetchAttendanceStats` accessed before it is declared
+  76 |       checkRegistration();
+  77 |     }
+  78 |   }, [studentId]);
+
+D:\smart-attendance-system\smart-attendance-system\app\(dashboard)\student\dashboard\page.tsx:115:3
+  113 |   };
+  114 |
+> 115 |   const fetchAttendanceStats = async () => {
+      |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 116 |     try {
+      | ^^^^^^^^^
+> 117 |       const [recordsRes, allSessionsRes] = await Promise.all([
+      ΓÇª
+      | ^^^^^^^^^
+> 141 |     } catch (e) { console.error(e); }
+      | ^^^^^^^^^
+> 142 |   };
+      | ^^^^^ `fetchAttendanceStats` is declared here
+  143 |
+  144 |   const openVerification = (session: ActiveSession) => {
+  145 |     setVerifyingSession(session);                                                                                                                                                             react-hooks/immutability
+   76:7   error    Error: Cannot access variable before it is declared
+
+`checkRegistration` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+D:\smart-attendance-system\smart-attendance-system\app\(dashboard)\student\dashboard\page.tsx:76:7
+  74 |       fetchActiveSessions();
+  75 |       fetchAttendanceStats();
+> 76 |       checkRegistration();
+     |       ^^^^^^^^^^^^^^^^^ `checkRegistration` accessed before it is declared
+  77 |     }
+  78 |   }, [studentId]);
+  79 |
+
+D:\smart-attendance-system\smart-attendance-system\app\(dashboard)\student\dashboard\page.tsx:80:3
+  78 |   }, [studentId]);
+  79 |
+> 80 |   const checkRegistration = async () => {
+     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 81 |     try {
+     | ^^^^^^^^^
+> 82 |       const res = await fetch(`/api/student/registration-status?studentId=${studentId}`);
+     | ^^^^^^^^^
+> 83 |       if (res.ok) {
+     | ^^^^^^^^^
+> 84 |         const { isRegistered } = await res.json();
+     | ^^^^^^^^^
+> 85 |         setIsRegistered(isRegistered);
+     | ^^^^^^^^^
+> 86 |       }
+     | ^^^^^^^^^
+> 87 |     } catch (e) { console.error(e); }
+     | ^^^^^^^^^
+> 88 |   };
+     | ^^^^^ `checkRegistration` is declared here
+  89 |
+  90 |   const fetchActiveSessions = async () => {
+  91 |     try {  react-hooks/immutability
+   78:6   warning  React Hook useEffect has missing dependencies: 'checkRegistration', 'fetchActiveSessions', and 'fetchAttendanceStats'. Either include them or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              react-hooks/exhaustive-deps
+  109:47  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-explicit-any
+  126:64  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-explicit-any
+  131:44  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-explicit-any
+  132:63  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-explicit-any
+
+D:\smart-attendance-system\smart-attendance-system\app\(dashboard)\student\issues\page.tsx
+    5:10   warning  'AlertCircle' is defined but never used                                                                         @typescript-eslint/no-unused-vars
+    5:56   warning  'ArrowRight' is defined but never used                                                                          @typescript-eslint/no-unused-vars
+    5:110  warning  'Target' is defined but never used                                                                              @typescript-eslint/no-unused-vars
+   34:41   error    Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+   44:8    warning  React Hook useEffect has a missing dependency: 'fetchIssues'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  287:27   error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                 react/no-unescaped-entities
+  287:47   error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                 react/no-unescaped-entities
+
+D:\smart-attendance-system\smart-attendance-system\app\(dashboard)\student\mark-attendance\page.tsx
+    5:30  warning  'User' is defined but never used                                                                                                                     @typescript-eslint/no-unused-vars
+   20:43  error    Unexpected any. Specify a different type                                                                                                             @typescript-eslint/no-explicit-any
+   41:6   warning  React Hook useEffect has missing dependencies: 'checkRegistration' and 'fetchAttendanceHistory'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+   73:45  error    Unexpected any. Specify a different type                                                                                                             @typescript-eslint/no-explicit-any
+  124:18  warning  'error' is defined but never used                                                                                                                    @typescript-eslint/no-unused-vars
+
+D:\smart-attendance-system\smart-attendance-system\app\(dashboard)\student\settings\page.tsx
+   27:19  warning  'session' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   28:44  error    Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+   84:18  warning  'error' is defined but never used             @typescript-eslint/no-unused-vars
+  104:18  warning  'error' is defined but never used             @typescript-eslint/no-unused-vars
+
+D:\smart-attendance-system\smart-attendance-system\app\(dashboard)\student\timetable\page.tsx
+  4:108  warning  'Zap' is defined but never used   @typescript-eslint/no-unused-vars
+  4:129  warning  'Play' is defined but never used  @typescript-eslint/no-unused-vars
+
+Γ£û 40 problems (18 errors, 22 warnings)
+

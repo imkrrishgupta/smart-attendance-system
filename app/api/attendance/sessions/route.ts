@@ -51,6 +51,7 @@ export async function POST(request: Request) {
     try {
         await dbConnect();
         const body = await request.json();
+        console.log('[Attendance API] POST Body:', JSON.stringify(body, null, 2));
 
         const { subject, teacherId, startTime, endTime, lat, lng, radius, branch, semester } = body;
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import {
   Camera,
@@ -9,72 +9,125 @@ import {
   Clock,
   Calendar,
   AlertCircle,
-  TrendingUp,
-  Award,
-  BookOpen,
+  RefreshCw,
+  User,
+  Lock,
+  ChevronRight,
+  History,
+  MessageSquare,
+  ArrowRight,
+  Activity,
+  Play,
+  Loader2,
+  X,
+  Target,
   XCircle,
-  X
+  ShieldCheck
 } from 'lucide-react';
 import Link from 'next/link';
-
 import FaceCapture from '@/components/attendance/FaceCapture';
+import GeoFenceCheck from '@/components/attendance/GeoFenceCheck';
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer, 
+  Cell 
+} from 'recharts';
 
 interface ActiveSession {
   _id: string;
   subject: string;
+  teacherId: { name: string };
   startTime: string;
   endTime: string;
-  teacherId: { name: string };
-  isActive: boolean;
+  room: string;
   branch?: string;
   semester?: string;
+  isActive?: boolean;
 }
 
 export default function StudentDashboard() {
   const { data: session } = useSession();
-  const studentId = (session?.user as any)?.id || null;
-  const studentName = session?.user?.name || 'Student';
-  const rollNo = (session?.user as any)?.email || '';
-  const branch = (session?.user as any)?.branch || '';
-  const semester = (session?.user as any)?.semester || '';
+  const studentId = (session?.user as { id: string })?.id;
+  const branch = (session?.user as any)?.branch;
+  const semester = (session?.user as any)?.semester;
 
-  // Sessions
   const [activeSessions, setActiveSessions] = useState<ActiveSession[]>([]);
   const [markedSessionIds, setMarkedSessionIds] = useState<string[]>([]);
-
-  // Verification Modal
-  const [verifyingSession, setVerifyingSession] = useState<ActiveSession | null>(null);
-  const [locationStatus, setLocationStatus] = useState<'idle' | 'checking' | 'success' | 'failed'>('idle');
-  const [locationMsg, setLocationMsg] = useState('');
-  const [faceStatus, setFaceStatus] = useState<'idle' | 'success' | 'failed'>('idle');
-  const [faceMsg, setFaceMsg] = useState('');
-
-  // Stats (fetched from API)
-  const [stats, setStats] = useState({ total: 0, present: 0, absent: 0, percentage: '0' });
-
-  // Registration Status
+  const [stats, setStats] = useState({ 
+    total: 0, 
+    present: 0, 
+    percentage: '0%',
+    subjectData: [] as { subject: string, presence: number, fullLabel: string }[]
+  });
+  const [loading, setLoading] = useState(true);
   const [isRegistered, setIsRegistered] = useState<boolean | null>(null);
 
+  // Verification Modal State
+  const [verifyingSession, setVerifyingSession] = useState<ActiveSession | null>(null);
+  const [step, setStep] = useState<'location' | 'face'>('location');
+  const [locationVerified, setLocationVerified] = useState(false);
+  const [faceVerified, setFaceVerified] = useState(false);
+  const [faceMsg, setFaceMsg] = useState('');
 
-  useEffect(() => {
-    if (studentId) {
-      fetchActiveSessions();
-      fetchAttendanceStats();
-      checkRegistration();
-    }
-  }, [studentId]);
-
-  const checkRegistration = async () => {
+  const checkRegistration = useCallback(async () => {
+    if (!studentId) return;
     try {
       const res = await fetch(`/api/student/registration-status?studentId=${studentId}`);
       if (res.ok) {
-        const { isRegistered } = await res.json();
-        setIsRegistered(isRegistered);
+        const data = await res.json();
+        setIsRegistered(data.isRegistered);
       }
     } catch (e) { console.error(e); }
-  };
+  }, [studentId]);
 
-  const fetchActiveSessions = async () => {
+  const fetchAttendanceStats = useCallback(async () => {
+    if (!studentId) return;
+    try {
+      const res = await fetch(`/api/attendance?studentId=${studentId}`);
+      if (res.ok) {
+        const records = await res.json();
+
+        // Calculate stats for current semester (Dashboard Default)
+        const currentSemRecords = records.filter((r: any) => 
+          r.sessionId?.semester?.toString() === semester?.toString()
+        );
+
+        const presentCount = currentSemRecords.filter((r: any) => r.status === 'present').length;
+        const totalCount = currentSemRecords.length;
+
+        // Calculate subject-wise stats (Current Semester)
+        const subjectStats: Record<string, { total: number, present: number }> = {};
+        currentSemRecords.forEach((r: any) => {
+          const subject = r.sessionId?.subject || 'Unknown';
+          if (!subjectStats[subject]) subjectStats[subject] = { total: 0, present: 0 };
+          subjectStats[subject].total++;
+          if (r.status === 'present') subjectStats[subject].present++;
+        });
+
+        const subjectData = Object.keys(subjectStats).map(subject => ({
+          subject,
+          presence: Math.round((subjectStats[subject].present / subjectStats[subject].total) * 100),
+          fullLabel: `${subject} (${subjectStats[subject].present}/${subjectStats[subject].total})`
+        })).sort((a, b) => b.presence - a.presence);
+
+        setStats({
+          present: presentCount,
+          total: totalCount,
+          percentage: totalCount > 0 ? `${Math.round((presentCount / totalCount) * 100)}%` : '0%',
+          subjectData
+        });
+
+        setMarkedSessionIds(records.filter((r: any) => r.status === 'present').map((r: any) => r.sessionId?._id || r.sessionId));
+      }
+    } catch (e) { console.error(e); }
+  }, [studentId, semester]);
+
+  const fetchActiveSessions = useCallback(async () => {
     try {
       const res = await fetch('/api/attendance/sessions');
       if (res.ok) {
@@ -87,357 +140,466 @@ export default function StudentDashboard() {
         setActiveSessions(activeOnly);
       }
     } catch (e) { console.error(e); }
-
-    // Also check which sessions are already marked
-    if (studentId) {
-      try {
-        const res = await fetch(`/api/attendance?studentId=${studentId}`);
-        if (res.ok) {
-          const records = await res.json();
-          setMarkedSessionIds(records.map((r: any) => r.sessionId?._id || r.sessionId));
-        }
-      } catch (e) { console.error(e); }
+    finally {
+      setLoading(false);
     }
-  };
+  }, [branch, semester]);
 
-  const fetchAttendanceStats = async () => {
-    try {
-      const [recordsRes, allSessionsRes] = await Promise.all([
-        fetch(`/api/attendance?studentId=${studentId}`),
-        fetch('/api/attendance/sessions')
-      ]);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
-      if (recordsRes.ok && allSessionsRes.ok) {
-        const records = await recordsRes.json();
-        const allSessions = await allSessionsRes.json();
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
 
-        // Only count sessions that match the student's branch and semester
-        const studentSpecificSessions = allSessions.filter((s: any) => 
-          (!s.branch || s.branch === branch) && 
-          (!s.semester || s.semester === semester)
-        );
-
-        const present = records.filter((r: any) => r.status === 'present').length;
-        // Total sessions that have already ended
-        const totalEnded = studentSpecificSessions.filter((s: any) => new Date(s.endTime) < new Date()).length;
-
-        setStats({
-          total: totalEnded,
-          present,
-          absent: Math.max(0, totalEnded - present),
-          percentage: totalEnded > 0 ? ((present / totalEnded) * 100).toFixed(1) : '0'
-        });
-      }
-    } catch (e) { console.error(e); }
-  };
-
-  // ── Verification Flow ──
+  useEffect(() => {
+    if (studentId) {
+      checkRegistration();
+      fetchActiveSessions();
+      fetchAttendanceStats();
+    }
+  }, [studentId, checkRegistration, fetchActiveSessions, fetchAttendanceStats]);
 
   const openVerification = (session: ActiveSession) => {
     setVerifyingSession(session);
-    setLocationStatus('idle');
-    setFaceStatus('idle');
-    setLocationMsg('');
+    setStep('location');
+    setLocationVerified(false);
+    setFaceVerified(false);
     setFaceMsg('');
   };
 
-  const closeVerification = () => {
-    setVerifyingSession(null);
+  const handleLocationSuccess = () => {
+    setLocationVerified(true);
+    setTimeout(() => setStep('face'), 800);
   };
 
-  const verifyLocation = () => {
-    setLocationStatus('checking');
-    setLocationMsg('Getting your location…');
-
-    if (!navigator.geolocation) {
-      setLocationStatus('failed');
-      setLocationMsg('Geolocation not supported by this browser.');
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        setLocationMsg('Verifying with server…');
-        try {
-          const res = await fetch('/api/geofence', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              sessionId: verifyingSession?._id,
-              latitude: pos.coords.latitude,
-              longitude: pos.coords.longitude
-            })
-          });
-          const data = await res.json();
-          if (res.ok && data.isInside) {
-            setLocationStatus('success');
-            setLocationMsg(`Inside classroom (${data.distance}m away)`);
-          } else {
-            setLocationStatus('failed');
-            setLocationMsg(data.error || `Outside geo-fence (${data.distance}m > ${data.allowedRadius}m)`);
-          }
-        } catch {
-          setLocationStatus('failed');
-          setLocationMsg('Server error while verifying location.');
-        }
-      },
-      (err) => {
-        setLocationStatus('failed');
-        setLocationMsg(`Location error: ${err.message}`);
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  };
-
-  const confirmAttendance = async () => {
-    if (!verifyingSession) return;
+  const handleFaceSuccess = async () => {
+    if (!verifyingSession || !studentId) return;
+    setFaceVerified(true);
+    setFaceMsg('Biometrics Validated');
+    
     try {
-      const res = await fetch('/api/attendance', {
+      const res = await fetch('/api/attendance/mark', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          sessionId: verifyingSession._id,
           studentId,
-          faceVerified: true,
-          locationVerified: true
+          sessionId: verifyingSession._id,
+          status: 'present'
         })
       });
+
       if (res.ok) {
-        setMarkedSessionIds(prev => [...prev, verifyingSession._id]);
-        closeVerification();
-        fetchAttendanceStats();
+        setFaceMsg('Attendance Recorded');
+        setTimeout(() => {
+          setVerifyingSession(null);
+          fetchActiveSessions();
+          fetchAttendanceStats();
+        }, 2000);
       }
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      setFaceMsg('Network error');
+    }
   };
 
-  // ── Render ──
-
-  const statCards = [
-    { label: 'Total Classes', value: stats.total, icon: BookOpen, bg: 'bg-indigo-50', text: 'text-indigo-600' },
-    { label: 'Present', value: stats.present, icon: CheckCircle, bg: 'bg-green-50', text: 'text-green-600' },
-    { label: 'Absent / Pending', value: stats.absent, icon: XCircle, bg: 'bg-red-50', text: 'text-red-600' },
-    { label: 'Attendance %', value: `${stats.percentage}%`, icon: TrendingUp, bg: 'bg-blue-50', text: 'text-blue-600' },
-  ];
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-indigo-600 animate-spin mx-auto mb-4" />
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-mono">Synchronizing Student Node...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-20">
       {/* Header */}
-      <header className="bg-white border-b border-slate-200">
-        <div className="px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-slate-900">Student Dashboard</h1>
-              <p className="text-slate-600 mt-1">Welcome back, {studentName}</p>
-            </div>
-            <div className="text-right text-sm text-slate-500">
-              <div>{rollNo}</div>
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
+        <div className="px-8 py-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <h1 className="text-3xl font-black text-slate-800 tracking-tight">Student Workspace</h1>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Operational Environment // Active</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="p-[2px] rounded-2xl bg-gradient-to-tr from-indigo-500 to-indigo-300">
+               <div className="px-5 py-2.5 bg-white rounded-[14px] flex items-center gap-3">
+                  <Activity className="w-4 h-4 text-indigo-500" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">Health: Nominal</span>
+               </div>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="p-8">
-        <div className="max-w-7xl mx-auto space-y-8">
+      <main className="p-8 max-w-7xl mx-auto space-y-12">
         {/* Registration Warning */}
         {isRegistered === false && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center shrink-0">
-                <AlertCircle className="w-6 h-6 text-amber-600" />
+          <div className="bg-rose-600 p-8 rounded-[32px] text-white shadow-2xl shadow-rose-100 flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform" />
+            <div className="flex items-center gap-6 relative z-10">
+              <div className="w-16 h-16 bg-white/20 rounded-[24px] flex items-center justify-center backdrop-blur-md">
+                <ShieldCheck className="w-8 h-8" />
               </div>
               <div>
-                <h3 className="font-bold text-amber-900 text-lg">Biometrics Not Registered</h3>
-                <p className="text-amber-700 text-sm">You must enroll your face data before you can mark attendance for any session.</p>
+                <h3 className="text-xl font-black uppercase tracking-tight">Biometric Registration Required</h3>
+                <p className="text-rose-100 text-xs font-bold uppercase tracking-widest opacity-80 mt-1">Link your facial identity model to enable attendance protocols.</p>
               </div>
             </div>
-            <Link 
-              href="/student/settings" 
-              className="px-6 py-2.5 bg-amber-600 text-white rounded-lg font-medium hover:bg-amber-700 transition whitespace-nowrap"
-            >
-              Register Now
+            <Link href="/student/settings" className="px-8 py-3.5 bg-white text-rose-600 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-rose-50 transition-all flex items-center gap-3 shadow-xl active:scale-95 whitespace-nowrap">
+              Begin Registration <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         )}
 
-        {/* Stat Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {statCards.map((s, i) => {
-            const Icon = s.icon;
-            return (
-              <div key={i} className="bg-white rounded-xl p-6 border border-slate-200 hover:shadow-lg transition-shadow">
-                <div className="flex items-start justify-between mb-4">
-                  <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${s.bg}`}>
-                    <Icon className={`w-6 h-6 ${s.text}`} />
-                  </div>
-                </div>
-                <div className="text-3xl font-bold text-slate-900 mb-1">{s.value}</div>
-                <div className="text-sm text-slate-500 font-medium">{s.label}</div>
-              </div>
-            );
-          })}
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+          {[
+            { label: 'Validated Present', value: stats.present, icon: CheckCircle, color: 'emerald' },
+            { label: 'Identity Status', value: isRegistered ? 'Secure' : 'Open', icon: Lock, color: isRegistered ? 'indigo' : 'rose' },
+            { label: 'Ingestion Index', value: stats.percentage, icon: Activity, color: 'slate' },
+            { label: 'Domain Total', value: stats.total, icon: Target, color: 'indigo' },
+          ].map((s, i) => (
+            <div key={i} className="bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm relative overflow-hidden group hover:shadow-xl transition-all duration-500">
+               <div className={`absolute top-0 right-0 w-24 h-24 bg-${s.color}-50 rounded-full -mr-12 -mt-12 group-hover:scale-110 transition-transform`} />
+               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 relative z-10">{s.label}</p>
+               <div className="flex items-baseline gap-2 relative z-10">
+                  <h3 className={`text-3xl font-black text-${s.color}-600 tracking-tight`}>{s.value}</h3>
+                  <s.icon className={`w-4 h-4 text-${s.color}-400`} />
+               </div>
+            </div>
+          ))}
         </div>
 
-        {/* Active Sessions */}
-        <div className="bg-white rounded-xl border border-slate-200">
-          <div className="p-6 border-b border-slate-200">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-slate-900">Active Sessions</h2>
-              <button onClick={fetchActiveSessions} className="text-indigo-600 font-medium hover:text-indigo-700">
-                Refresh
-              </button>
-            </div>
-          </div>
-          <div className="p-6">
-            {activeSessions.length === 0 ? (
-              <div className="text-center text-slate-500 py-8 italic">
-                No active sessions right now.
+        {/* Analytics Section */}
+        {stats.subjectData.length > 0 && (
+          <div className="bg-white p-10 rounded-[48px] border border-slate-200 shadow-sm space-y-8">
+            <div className="flex items-center justify-between px-2">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-100">
+                   <Activity className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black text-slate-800 tracking-tight uppercase tracking-widest leading-none">Intelligence Map</h2>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Presence percentage per academic sector</p>
+                </div>
               </div>
-            ) : (
-              <div className="space-y-4">
-                {activeSessions.map(session => {
-                  const isMarked = markedSessionIds.includes(session._id);
-                  return (
-                    <div key={session._id} className={`flex items-center justify-between p-4 bg-slate-50 rounded-lg border transition-colors ${isMarked ? 'border-green-200 bg-green-50' : 'border-slate-200 hover:border-slate-300'}`}>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="font-semibold text-slate-900">{session.subject}</h3>
-                          <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
-                            Live
-                          </span>
-                        </div>
-                        <div className="text-sm text-slate-600">
-                          <div className="flex flex-wrap gap-4">
-                            <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {new Date(session.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                            <span>Teacher: {session.teacherId?.name || '—'}</span>
+            </div>
+
+            <div className="h-[400px] w-full pt-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={stats.subjectData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis 
+                    dataKey="subject" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fill: '#64748b', fontSize: 10, fontWeight: 800 }} 
+                    angle={-45}
+                    textAnchor="end"
+                    interval={0}
+                  />
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 800 }} 
+                    domain={[0, 100]}
+                    unit="%"
+                  />
+                  <Tooltip 
+                    cursor={{ fill: '#f8fafc' }}
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div className="bg-slate-900 px-4 py-3 rounded-2xl border border-slate-800 shadow-2xl">
+                            <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">{payload[0].payload.subject}</p>
+                            <p className="text-xl font-black text-white">{payload[0].value}% <span className="text-slate-400 text-xs font-medium ml-1">Presence</span></p>
+                            <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-2">{payload[0].payload.fullLabel}</p>
                           </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 ml-4">
-                        {isMarked ? (
-                          <span className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-700 rounded-lg font-semibold text-sm whitespace-nowrap">
-                            <CheckCircle className="w-4 h-4" /> Marked
-                          </span>
-                        ) : (
-                          <button
-                            onClick={() => openVerification(session)}
-                            disabled={!isRegistered}
-                            className={`px-6 py-2 rounded-lg font-semibold text-sm transition flex items-center gap-2 whitespace-nowrap ${
-                              isRegistered 
-                                ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                            }`}
-                          >
-                            <Camera className="w-4 h-4" /> Mark
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="bg-white rounded-xl border border-slate-200">
-          <div className="p-6 border-b border-slate-200">
-            <h2 className="text-xl font-bold text-slate-900">Quick Actions</h2>
-          </div>
-          <div className="p-6 grid sm:grid-cols-3 gap-4">
-            <Link href="/student/mark-attendance" className="px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition flex items-center gap-3">
-              <Camera className="w-5 h-5" />
-              All Sessions
-            </Link>
-            <Link href="/student/attendance-history" className="px-4 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition flex items-center gap-3">
-              <BookOpen className="w-5 h-5" />
-              History
-            </Link>
-            <Link href="/student/issues" className="px-4 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition flex items-center gap-3">
-              <AlertCircle className="w-5 h-5" />
-              Raise Issue
-            </Link>
-          </div>
-        </div>
-        </div>
-      </div>
-
-      {/* ── Verification Modal ── */}
-      {verifyingSession && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-            {/* Header */}
-            <div className="flex items-center justify-between p-5 border-b bg-slate-50">
-              <div>
-                <h3 className="font-bold text-lg text-slate-800">Attendance Verification</h3>
-                <p className="text-sm text-slate-500">{verifyingSession.subject}</p>
-              </div>
-              <button onClick={closeVerification} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
-            </div>
-
-            <div className="p-5 space-y-5">
-              {/* Step 1: Location */}
-              <div className="border rounded-xl p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="flex items-center gap-2 font-semibold text-slate-700">
-                    <MapPin className="w-5 h-5 text-slate-400" /> Step 1 — Geo-Location
-                  </span>
-                  {locationStatus === 'success' && <CheckCircle className="w-5 h-5 text-green-500" />}
-                  {locationStatus === 'failed' && <XCircle className="w-5 h-5 text-red-500" />}
-                </div>
-                {locationStatus === 'idle' && (
-                  <button onClick={verifyLocation} className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition">
-                    Check My Location
-                  </button>
-                )}
-                {locationStatus !== 'idle' && (
-                  <p className={`text-sm ${locationStatus === 'failed' ? 'text-red-600' : locationStatus === 'success' ? 'text-green-600' : 'text-slate-500'}`}>{locationMsg}</p>
-                )}
-              </div>
-
-              {/* Step 2: Face */}
-              <div className={`border rounded-xl p-4 transition ${locationStatus !== 'success' ? 'opacity-40 pointer-events-none' : ''}`}>
-                <div className="flex items-center justify-between mb-3">
-                  <span className="flex items-center gap-2 font-semibold text-slate-700">
-                    <Camera className="w-5 h-5 text-slate-400" /> Step 2 — Face Recognition
-                  </span>
-                  {faceStatus === 'success' && <CheckCircle className="w-5 h-5 text-green-500" />}
-                  {faceStatus === 'failed' && <XCircle className="w-5 h-5 text-red-500" />}
-                </div>
-
-                {faceStatus !== 'success' && (
-                  <FaceCapture
-                    studentId={studentId}
-                    onVerified={(conf) => {
-                      setFaceStatus('success');
-                      setFaceMsg(`Verified — Confidence ${conf}%`);
-                    }}
-                    onFailed={(err) => {
-                      setFaceStatus('failed');
-                      setFaceMsg(err);
+                        );
+                      }
+                      return null;
                     }}
                   />
-                )}
+                  <Bar 
+                    dataKey="presence" 
+                    radius={[12, 12, 0, 0]} 
+                    barSize={40}
+                    animationDuration={1500}
+                  >
+                    {stats.subjectData.map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={entry.presence >= 75 ? '#10b981' : entry.presence >= 60 ? '#f59e0b' : '#ef4444'} 
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+          {/* Active Sessions */}
+          <div className="lg:col-span-8 space-y-8">
+            <div className="flex items-center justify-between px-2">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-slate-900 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-slate-100">
+                   <Clock className="w-5 h-5" />
+                </div>
+                <h2 className="text-2xl font-black text-slate-800 tracking-tight uppercase tracking-widest">Active Intervals</h2>
+              </div>
+              <div className="px-4 py-1.5 bg-white border border-slate-200 rounded-full text-[10px] font-black text-slate-400 uppercase tracking-widest shadow-sm">
+                Live Data
+              </div>
+            </div>
+
+            <div className="grid gap-6">
+              {activeSessions.length === 0 ? (
+                <div className="bg-white rounded-[40px] border border-slate-200 p-24 text-center shadow-sm">
+                  <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner">
+                    <History className="w-10 h-10 text-slate-200" />
+                  </div>
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight uppercase tracking-widest mb-2">Zero Active Clusters</h3>
+                  <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">All academic sectors are currently inert</p>
+                </div>
+              ) : (
+                activeSessions.map((session) => {
+                  const isMarked = markedSessionIds.includes(session._id);
+                  return (
+                    <div key={session._id} className="bg-white rounded-[40px] border border-slate-200 p-10 hover:shadow-2xl hover:shadow-indigo-50 transition-all group overflow-hidden relative">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform" />
+                      
+                      <div className="flex flex-col md:flex-row justify-between gap-10 items-start md:items-center relative z-10">
+                        <div className="flex items-center gap-8">
+                          <div className={`w-20 h-20 rounded-3xl flex items-center justify-center border-2 border-white shadow-2xl transition-transform group-hover:scale-105 ${isMarked ? 'bg-emerald-50 text-emerald-600' : 'bg-indigo-50 text-indigo-600'}`}>
+                             {isMarked ? <CheckCircle className="w-10 h-10" /> : <Play className="w-10 h-10 ml-1" />}
+                          </div>
+                          <div>
+                            <h3 className="text-3xl font-black text-slate-900 tracking-tighter uppercase leading-none mb-3">
+                              {session.subject}
+                            </h3>
+                            <div className="flex flex-wrap items-center gap-6">
+                              <div className="flex items-center gap-2">
+                                <User className="w-3.5 h-3.5 text-slate-400" />
+                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{session.teacherId?.name}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <MapPin className="w-3.5 h-3.5 text-indigo-400" />
+                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{session.room}</span>
+                              </div>
+                                <div className="flex items-center gap-2 px-3 py-1 bg-slate-50 rounded-full border border-slate-100">
+                                  <Clock className="w-3 h-3 text-slate-300" />
+                                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-mono italic">
+                                    {new Date() > new Date(session.endTime) ? 'Expired' : 
+                                      `Expires in: ${Math.max(0, Math.floor((new Date(session.endTime).getTime() - new Date().getTime()) / 60000))}m`}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {isMarked ? (
+                            <div className="px-8 py-3 bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border border-emerald-100 flex items-center gap-3 shadow-lg shadow-emerald-50">
+                              <ShieldCheck className="w-4 h-4" />
+                              Verified present
+                            </div>
+                          ) : new Date() > new Date(session.endTime) ? (
+                            <div className="px-8 py-3 bg-rose-50 text-rose-700 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border border-rose-100 flex items-center gap-3 opacity-50">
+                               <XCircle className="w-4 h-4" />
+                               Registry Closed
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => openVerification(session)}
+                              className="group/btn px-10 py-5 bg-slate-900 text-white rounded-[24px] text-[10px] font-black uppercase tracking-[0.3em] hover:bg-indigo-600 transition-all flex items-center gap-3 shadow-2xl shadow-slate-200 active:scale-95"
+                            >
+                               Start Ingestion <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                })
+              )}
+            </div>
+          </div>
+
+          {/* Quick Actions Sidebar */}
+          <div className="lg:col-span-4 space-y-10">
+            <div className="flex items-center gap-4 px-2">
+                <div className="w-10 h-10 bg-slate-200 rounded-2xl flex items-center justify-center text-slate-600 shadow-sm font-black">
+                   <ChevronRight className="w-5 h-5" />
+                </div>
+                <h2 className="text-2xl font-black text-slate-800 tracking-tight uppercase tracking-widest">Rapid Link</h2>
+            </div>
+            
+            <div className="grid gap-6">
+               {[
+                { label: 'Archive Logs', icon: History, link: '/student/attendance-history', color: 'slate' },
+                { label: 'Sequence Map', icon: Calendar, link: '/student/timetable', color: 'indigo' },
+                { label: 'Support Node', icon: MessageSquare, link: '/student/issues', color: 'slate' },
+                { label: 'Identity Config', icon: User, link: '/student/settings', color: 'indigo' },
+               ].map((action, i) => (
+                 <Link key={i} href={action.link} className="group bg-white p-6 rounded-[32px] border border-slate-200 flex items-center justify-between hover:shadow-2xl hover:shadow-indigo-50 hover:border-indigo-100 transition-all duration-500">
+                   <div className="flex items-center gap-6">
+                      <div className={`w-14 h-14 rounded-2xl bg-${action.color}-50 text-${action.color}-600 flex items-center justify-center group-hover:scale-110 group-hover:bg-${action.color}-600 group-hover:text-white shadow-sm shadow-${action.color}-100 transition-all duration-500`}>
+                        <action.icon className="w-6 h-6" />
+                      </div>
+                      <span className="text-[11px] font-black text-slate-800 uppercase tracking-[0.2em] group-hover:text-indigo-600 transition-colors">{action.label}</span>
+                   </div>
+                   <div className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 group-hover:text-indigo-600 group-hover:bg-indigo-50 transition-all">
+                      <ArrowRight className="w-4 h-4" />
+                   </div>
+                 </Link>
+               ))}
+            </div>
+
+            <div className="bg-indigo-600 rounded-[48px] p-10 text-white shadow-2xl shadow-indigo-100 relative overflow-hidden group">
+               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform" />
+               <div className="relative z-10">
+                  <div className="w-14 h-14 bg-white opacity-20 rounded-[24px] mb-8" />
+                  <h3 className="text-2xl font-black mb-4 tracking-tighter uppercase tracking-widest leading-none">Intelligence Hub</h3>
+                  <p className="text-indigo-100 text-[10px] font-bold leading-relaxed uppercase tracking-widest opacity-80 mb-8">Data accuracy is paramount. Audit your sequence map regularly to ensure synchronization with academic intervals.</p>
+                  <button className="w-full py-4 bg-white text-indigo-600 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-indigo-900/10 hover:bg-indigo-50 active:scale-95 transition-all">Audit Now</button>
+               </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      {/* Verification Modal */}
+      {verifyingSession && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-6 z-[100] animate-in fade-in duration-500">
+          <div className="bg-white rounded-[48px] shadow-2xl w-full max-w-4xl overflow-hidden border border-white/20 transform animate-in zoom-in-95 duration-500">
+            <div className="flex h-[700px]">
+              {/* Sidebar Info */}
+              <div className="w-1/3 bg-slate-900 p-12 text-white flex flex-col justify-between relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600 rounded-full -mr-32 -mt-32 blur-3xl opacity-20" />
+                <div className="relative z-10">
+                  <h3 className="text-xs font-black text-indigo-400 uppercase tracking-[0.3em] mb-6">Validation Protocol</h3>
+                  <h2 className="text-4xl font-black tracking-tight leading-none mb-4 uppercase">{verifyingSession.subject}</h2>
+                  <div className="space-y-6 mt-12">
+                     <div className="flex items-center gap-4 group">
+                        <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-indigo-300">
+                           <User className="w-5 h-5" />
+                        </div>
+                        <div>
+                           <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">Faculty Origin</p>
+                           <p className="text-sm font-black uppercase">{verifyingSession.teacherId?.name}</p>
+                        </div>
+                     </div>
+                     <div className="flex items-center gap-4 group">
+                        <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-indigo-300">
+                           <MapPin className="w-5 h-5" />
+                        </div>
+                        <div>
+                           <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">Target Sector</p>
+                           <p className="text-sm font-black uppercase">{verifyingSession.room}</p>
+                        </div>
+                     </div>
+                  </div>
+                </div>
                 
-                {faceStatus === 'success' && (
-                  <p className="text-sm text-green-600 font-medium">{faceMsg}</p>
-                )}
+                <div className="relative z-10 pt-12 border-t border-white/10">
+                   <div className="flex items-center gap-3 mb-4">
+                      <div className={`w-3 h-3 rounded-full ${step === 'location' ? 'bg-indigo-500 animate-pulse' : 'bg-emerald-500'}`} />
+                      <span className={`text-[10px] font-black uppercase tracking-widest ${step === 'location' ? 'text-white' : 'text-white/40'}`}>Spatial Scan</span>
+                   </div>
+                   <div className="flex items-center gap-3">
+                      <div className={`w-3 h-3 rounded-full ${step === 'face' ? 'bg-indigo-500 animate-pulse outline outline-4 outline-indigo-500/20' : 'bg-white/10'}`} />
+                      <span className={`text-[10px] font-black uppercase tracking-widest ${step === 'face' ? 'text-white' : 'text-white/40'}`}>Biometric Link</span>
+                   </div>
+                </div>
               </div>
 
-              {/* Confirm */}
-              <button
-                onClick={confirmAttendance}
-                disabled={locationStatus !== 'success' || faceStatus !== 'success'}
-                className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold text-base shadow-lg transition disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                ✅ Confirm Attendance
-              </button>
+              {/* Main Interface */}
+              <div className="flex-1 flex flex-col relative bg-white">
+                <div className="p-8 border-b border-slate-100 flex items-center justify-between">
+                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-4 py-2 rounded-full border border-slate-100">Synchronizing Secure Channel</span>
+                   <button onClick={() => setVerifyingSession(null)} className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-all active:scale-90">
+                      <X className="w-5 h-5" />
+                   </button>
+                </div>
 
-              {(locationStatus === 'failed' || faceStatus === 'failed') && (
-                <p className="text-center text-sm">
-                  <Link href="/student/issues" className="text-blue-600 hover:underline">Having trouble? Raise an issue →</Link>
-                </p>
-              )}
+                <div className="flex-1 p-12 overflow-hidden">
+                  {step === 'location' ? (
+                    <div className="h-full flex flex-col">
+                      <div className="flex-1 rounded-[40px] overflow-hidden border-2 border-slate-100 shadow-inner group relative">
+                        <div className="p-10 h-full flex flex-col items-center justify-center">
+                          <GeoFenceCheck 
+                            sessionId={verifyingSession._id}
+                            onVerified={handleLocationSuccess}
+                            onFailed={(err) => setFaceMsg(err)}
+                          />
+                        </div>
+                        {!locationVerified && (
+                           <div className="absolute inset-x-8 bottom-8 bg-slate-900/90 backdrop-blur-xl p-6 rounded-[24px] text-white flex items-center justify-between animate-in slide-in-from-bottom-10">
+                              <div className="flex items-center gap-4">
+                                 <RefreshCw className="w-6 h-6 text-indigo-400 animate-spin" />
+                                 <span className="text-[10px] font-black uppercase tracking-[0.2em]">Acquiring Global Coordinates...</span>
+                              </div>
+                              <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Spatial Sync Active</span>
+                           </div>
+                        )}
+                        {locationVerified && (
+                          <div className="absolute inset-0 bg-emerald-600/10 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-500">
+                             <div className="bg-white p-8 rounded-full shadow-2xl scale-125 animate-in zoom-in">
+                                <ShieldCheck className="w-12 h-12 text-emerald-600" />
+                             </div>
+                          </div>
+                        )}
+                      </div>
+                      <div className="mt-8 flex items-center justify-between px-2">
+                        <div>
+                           <h4 className="text-xl font-black text-slate-900 tracking-tight uppercase leading-none mb-2">Spatial Calibration</h4>
+                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic font-mono">Status: {locationVerified ? 'Aligned' : 'Acquiring Link...'}</p>
+                        </div>
+                        <div className="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center">
+                           <MapPin className="w-6 h-6 text-indigo-600" />
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="h-full flex flex-col">
+                      <div className="flex-1 rounded-[40px] overflow-hidden border-2 border-slate-100 shadow-inner relative bg-black">
+                        <FaceCapture 
+                          studentId={studentId || ''} 
+                          onVerified={handleFaceSuccess}
+                          onFailed={(err: string) => setFaceMsg(err)}
+                          mode="verify"
+                        />
+                        {faceMsg && (
+                           <div className="absolute inset-x-8 bottom-8 bg-black/80 backdrop-blur-md p-6 rounded-[24px] text-white flex items-center justify-between animate-in slide-in-from-bottom-10 border border-white/10 shadow-2xl">
+                              <div className="flex items-center gap-4">
+                                 <AlertCircle className="w-5 h-5 text-indigo-400" />
+                                 <span className="text-[10px] font-black uppercase tracking-[0.2em]">{faceMsg}</span>
+                              </div>
+                           </div>
+                        )}
+                        {faceVerified && (
+                          <div className="absolute inset-0 bg-emerald-600/10 backdrop-blur-md flex items-center justify-center animate-in fade-in duration-500">
+                             <div className="bg-white p-10 rounded-full shadow-2xl scale-125 animate-in zoom-in">
+                                <ShieldCheck className="w-16 h-16 text-emerald-600" />
+                             </div>
+                          </div>
+                        )}
+                      </div>
+                      <div className="mt-8 flex items-center justify-between px-2">
+                        <div>
+                           <h4 className="text-xl font-black text-slate-900 tracking-tight uppercase leading-none mb-2">Biometric Ingestion</h4>
+                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic font-mono">Status: {faceVerified ? 'Identified' : 'Scanning Neural Map...'}</p>
+                        </div>
+                        <div className="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center">
+                           <Camera className="w-6 h-6 text-indigo-600" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>

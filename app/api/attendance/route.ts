@@ -29,12 +29,9 @@ export async function GET(request: Request) {
     if (!student) return NextResponse.json({ error: 'Student not found' }, { status: 404 });
 
     const [attendanceRecords, allSessions] = await Promise.all([
-      Attendance.find({ studentId }).populate('sessionId', 'subject startTime endTime'),
+      Attendance.find({ studentId }).populate('sessionId', 'subject startTime endTime branch semester'),
       Session.find({
-        $or: [
-          { branch: student.branch, semester: student.semester },
-          { branch: { $exists: false } } // Fallback for old sessions
-        ]
+        branch: student.branch
       })
     ]);
 
