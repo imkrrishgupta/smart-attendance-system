@@ -12,16 +12,9 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: 'Student ID is required' }, { status: 400 });
         }
 
-        const student = await User.findById(studentId).select('faceEmbeddings faceEmbedding');
+        const student = await User.findById(studentId).select('faceEmbeddings');
         if (!student) {
             return NextResponse.json({ error: 'Student not found' }, { status: 404 });
-        }
-
-        // Lazy migration: if they have the old field but not the new one
-        if ((!student.faceEmbeddings || student.faceEmbeddings.length === 0) && 
-            (student.faceEmbedding && student.faceEmbedding.length > 0)) {
-            student.faceEmbeddings = [student.faceEmbedding];
-            await student.save();
         }
 
         const isRegistered = !!(student.faceEmbeddings && student.faceEmbeddings.length > 0);

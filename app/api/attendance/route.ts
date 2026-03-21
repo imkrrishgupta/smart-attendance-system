@@ -41,7 +41,7 @@ export async function GET(request: Request) {
       if (record) return record;
 
       // If no record exists and session has ended, mark as absent
-      if (new Date(session.endTime) < new Date()) {
+      if (session.endTime && new Date(session.endTime) < new Date()) {
         return {
           _id: `absent-${session._id}`,
           sessionId: session,

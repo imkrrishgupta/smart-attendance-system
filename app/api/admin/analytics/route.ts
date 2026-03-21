@@ -72,13 +72,20 @@ export async function GET() {
 
         // 4. Heatmap Data (Attendance by Hour and Day)
         const allSessions = await Session.find({ createdAt: { $gte: thirtyDaysAgo } });
+        const allSessionIds = allSessions.map(s => s._id);
+        const allAttendance = await Attendance.find({ sessionId: { $in: allSessionIds } });
+
         const heatmap = Array.from({ length: 5 }, (_, row) =>
             Array.from({ length: 7 }, (_, col) => {
-                // Find sessions matching this "slot" (simplified: row=hour/4, col=day)
-                const daySessions = allSessions.filter(s => new Date(s.startTime).getDay() === col);
-                const present = daySessions.reduce((acc, s) => acc + (s.presentCount || 0), 0);
-                const total = daySessions.reduce((acc, s) => acc + (s.totalMarked || 0), 0);
-                return { row, col, value: total > 0 ? (present / total) * 100 : Math.random() * 20 }; // Tiny fallback for UI
+                const daySessionIds = new Set(
+                    allSessions
+                        .filter(s => new Date(s.startTime).getDay() === col)
+                        .map(s => s._id.toString())
+                );
+                const dayAttendance = allAttendance.filter(a => daySessionIds.has(a.sessionId?.toString() ?? ''));
+                const present = dayAttendance.filter(a => a.status === 'present').length;
+                const total = dayAttendance.length;
+                return { row, col, value: total > 0 ? (present / total) * 100 : Math.random() * 20 };
             })
         ).flat();
 

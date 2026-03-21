@@ -19,7 +19,7 @@ export async function GET() {
                 return {
                     _id: s._id,
                     subject: s.subject,
-                    teacher: s.teacherId?.name || 'Unknown',
+                    teacher: (s.teacherId as any)?.name || 'Unknown',
                     present: presentCount,
                     total: totalMarked,
                     startTime: s.startTime

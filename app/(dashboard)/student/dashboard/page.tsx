@@ -179,13 +179,14 @@ export default function StudentDashboard() {
     setFaceMsg('Biometrics Validated');
     
     try {
-      const res = await fetch('/api/attendance/mark', {
+      const res = await fetch('/api/attendance', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           studentId,
           sessionId: verifyingSession._id,
-          status: 'present'
+          faceVerified: true,
+          locationVerified: true
         })
       });
 

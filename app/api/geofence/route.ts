@@ -18,8 +18,8 @@ function getDistance(
   const a =
     Math.sin(dLat / 2) ** 2 +
     Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) ** 2;
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLon / 2) ** 2;
 
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
@@ -59,6 +59,13 @@ export async function POST(request: Request) {
   if (!geoLocation) {
     return NextResponse.json(
       { error: 'Geo-fence not configured for this session' },
+      { status: 400 }
+    );
+  }
+
+  if (geoLocation.lat == null || geoLocation.lng == null || geoLocation.radius == null) {
+    return NextResponse.json(
+      { error: 'Geo-fence is incomplete (missing lat, lng, or radius)' },
       { status: 400 }
     );
   }

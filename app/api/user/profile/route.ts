@@ -19,8 +19,7 @@ export async function GET() {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
 
-        const isFaceEnrolled = (user.faceEmbeddings && user.faceEmbeddings.length > 0) || 
-                               (user.faceEmbedding && user.faceEmbedding.length > 0);
+        const isFaceEnrolled = !!(user.faceEmbeddings && user.faceEmbeddings.length > 0);
 
         return NextResponse.json({
             ...user.toObject(),
@@ -73,7 +72,6 @@ export async function DELETE() {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
 
-        user.faceEmbedding = [];
         user.faceEmbeddings = [];
         await user.save();
 

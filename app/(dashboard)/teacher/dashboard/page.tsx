@@ -108,6 +108,8 @@ export default function TeacherDashboard() {
       teacherId,
       startTime: newStart,
       endTime: newEnd || undefined,
+      lat: parseFloat(geoLat) || undefined,
+      lng: parseFloat(geoLng) || undefined,
       radius: parseInt(newRadius) || 100,
       branch: newBranch,
       semester: newSemester

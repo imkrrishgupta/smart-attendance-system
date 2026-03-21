@@ -330,6 +330,9 @@ export default function FaceCapture({ studentId, mode = 'verify', onVerified, on
             const descriptors: number[][] = [];
             let framesCaptured = 0;
             let consecutiveFailures = 0;
+            // Plain object ref so async closure always reads the live movement value (not stale state)
+            const movementRef = { current: false };
+            let lastLandmarksLocal: any = null;
             setMovementDetected(false);
             setLastLandmarks(null);
 
@@ -338,7 +341,6 @@ export default function FaceCapture({ studentId, mode = 'verify', onVerified, on
                     return;
                 }
 
-                // Verify video is still ready
                 if (videoRef.current.readyState < 2) {
                     onFailed('Camera feed lost. Please try again.');
                     updateStatus('idle');
@@ -346,20 +348,17 @@ export default function FaceCapture({ studentId, mode = 'verify', onVerified, on
                 }
 
                 if (framesCaptured >= 3) {
-                    if (!movementDetected) {
+                    if (!movementRef.current) {
                         onFailed('Liveness check failed. Please move slightly during the scan.');
                         updateStatus('idle');
                         return;
                     }
-                    
+
                     try {
                         const res = await fetch('/api/face-auth', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                studentId,
-                                descriptors // Send all captured descriptors for better reliability
-                            })
+                            body: JSON.stringify({ studentId, descriptors })
                         });
 
                         const data = await res.json();
@@ -377,23 +376,39 @@ export default function FaceCapture({ studentId, mode = 'verify', onVerified, on
                 }
 
                 try {
-                    // Use explicit options for better reliability
                     const options = new faceapiRef.current.SsdMobilenetv1Options({ minConfidence: 0.3 });
                     const detection = await faceapiRef.current.detectSingleFace(videoRef.current, options)
                         .withFaceLandmarks()
                         .withFaceDescriptor();
 
                     if (detection && detection.descriptor) {
-                        checkMovement(detection.landmarks);
+                        // Track movement via local variable — avoids stale React state closure
+                        if (lastLandmarksLocal) {
+                            const dist = Math.sqrt(
+                                Math.pow(detection.landmarks.positions[0].x - lastLandmarksLocal.positions[0].x, 2) +
+                                Math.pow(detection.landmarks.positions[0].y - lastLandmarksLocal.positions[0].y, 2)
+                            );
+                            if (dist > 2) {
+                                movementRef.current = true;
+                                setMovementDetected(true);
+                            }
+                        }
+                        lastLandmarksLocal = detection.landmarks;
                         descriptors.push(Array.from(detection.descriptor));
                         framesCaptured++;
                         consecutiveFailures = 0;
                         setTimeout(captureLoop, 500);
                     } else {
                         consecutiveFailures++;
-                        console.warn(`[VERIFY_SCAN] Detection failed (Attempt ${consecutiveFailures}/15).`);
-                        if (consecutiveFailures > 15) {
-                            throw new Error('Verification timed out. Face not detected. Ensure clear visibility and good lighting.');
+                        console.warn(`[VERIFY_SCAN] Detection failed (Attempt ${consecutiveFailures}/60).`);
+                        if (consecutiveFailures > 10) {
+                            setMessage('FACE NOT DETECTED — ENSURE CLEAR LIGHTING & VISIBILITY');
+                        }
+                        if (consecutiveFailures > 60) {
+                            // Call onFailed directly — avoids being swallowed by the catch below
+                            onFailed('Verification timed out. Face not detected. Ensure clear visibility and good lighting.');
+                            updateStatus('idle');
+                            return;
                         }
                         setTimeout(captureLoop, 600);
                     }

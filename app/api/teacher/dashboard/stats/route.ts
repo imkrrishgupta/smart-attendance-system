@@ -20,11 +20,11 @@ export async function GET(request: Request) {
         const totalSessions = sessions.length;
         const activeSessions = sessions.filter(s => s.isActive).length;
 
-        // 2. Total present count across all sessions
-        const totalPresent = sessions.reduce((sum, s) => sum + (s.presentCount || 0), 0);
+        // 2. Total present count across all sessions (via Attendance collection)
+        const sessionIds = sessions.map(s => s._id);
+        const totalPresent = await Attendance.countDocuments({ sessionId: { $in: sessionIds }, status: 'present' });
 
         // 3. Pending issues for sessions owned by this teacher
-        const sessionIds = sessions.map(s => s._id);
         const pendingIssues = await AttendanceIssue.countDocuments({
             sessionId: { $in: sessionIds },
             status: 'pending'
