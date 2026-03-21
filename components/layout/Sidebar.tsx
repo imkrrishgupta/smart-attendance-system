@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import {
     LayoutDashboard,
     CheckSquare,
@@ -108,7 +108,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 {/* Logout */}
                 <div className="p-3 border-t border-slate-800">
                     <button
-                        onClick={() => router.push('/')}
+                        onClick={() => signOut({ callbackUrl: '/login' })}
                         className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-300 hover:bg-red-600/80 hover:text-white transition-colors"
                     >
                         <LogOut className="w-5 h-5" />

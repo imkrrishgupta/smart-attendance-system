@@ -1,6 +1,7 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
+import { signOut } from 'next-auth/react';
 import { 
   LayoutDashboard, 
   CheckSquare, 
@@ -32,9 +33,7 @@ export default function StudentLayout({
   ];
 
   const handleLogout = () => {
-    if (confirm('Are you sure you want to logout?')) {
-      router.push('/');
-    }
+    signOut({ callbackUrl: '/login' });
   };
 
   return (

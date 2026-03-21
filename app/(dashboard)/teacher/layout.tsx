@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import {
   LayoutDashboard,
   PlayCircle,
@@ -38,9 +38,7 @@ export default function TeacherLayout({
   ];
 
   const handleLogout = () => {
-    if (confirm('Are you sure you want to logout?')) {
-      router.push('/');
-    }
+    signOut({ callbackUrl: '/login' });
   };
 
   return (
