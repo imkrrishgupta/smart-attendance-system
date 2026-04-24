@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { signOut } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
 import { 
   LayoutDashboard, 
   CheckSquare, 
@@ -22,6 +22,7 @@ export default function StudentLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { data: session } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const navigation = [
@@ -49,7 +50,7 @@ export default function StudentLayout({
               </div>
               <div>
                 <h2 className="text-white font-bold">Student Panel</h2>
-                <p className="text-slate-400 text-xs">2024UGCS062</p>
+                <p className="text-slate-400 text-xs">{(session?.user as any)?.rollNumber?.toUpperCase() || 'Loading...'}</p>
               </div>
             </div>
             <button
