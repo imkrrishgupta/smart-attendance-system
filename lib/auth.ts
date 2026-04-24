@@ -30,7 +30,8 @@ export const authOptions: AuthOptions = {
           email: user.email,
           role: user.role,
           branch: user.branch,
-          semester: user.semester
+          semester: user.semester,
+          rollNumber: user.rollNumber
         };
       }
     })
@@ -42,6 +43,7 @@ export const authOptions: AuthOptions = {
         token.role = user.role;
         token.branch = (user as any).branch;
         token.semester = (user as any).semester;
+        token.rollNumber = (user as any).rollNumber;
       }
       return token;
     },
@@ -51,6 +53,7 @@ export const authOptions: AuthOptions = {
         (session.user as any).role = token.role as string;
         (session.user as any).branch = token.branch as string;
         (session.user as any).semester = token.semester as string;
+        (session.user as any).rollNumber = token.rollNumber as string;
       }
       return session;
     }
