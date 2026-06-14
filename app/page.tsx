@@ -238,7 +238,7 @@ export default function HomePage() {
 
         {/* ── HERO ── */}
         <section className="relative overflow-hidden pt-32 pb-28 px-6">
-          <div className="absolute top-16 right-16 w-[500px] h-[500px] bg-indigo-100 rounded-full blur-3xl opacity-50 pointer-events-none" />
+          <div className="absolute top-16 right-16 w-125 h-125 bg-indigo-100 rounded-full blur-3xl opacity-50 pointer-events-none" />
           <div className="absolute bottom-8 left-8 w-80 h-80 bg-green-100 rounded-full blur-3xl opacity-35 pointer-events-none" />
           <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-blue-100 rounded-full blur-3xl opacity-25 pointer-events-none" />
 
