@@ -425,7 +425,7 @@ export default function FaceCapture({ studentId, mode = 'verify', onVerified, on
 
     if (!modelsLoaded) {
         return (
-            <div className="flex flex-col items-center justify-center p-12 bg-slate-900 rounded-3xl border border-slate-800 min-h-[400px] shadow-2xl relative overflow-hidden group">
+            <div className="flex flex-col items-center justify-center p-12 bg-slate-900 rounded-3xl border border-slate-800 min-h-100 shadow-2xl relative overflow-hidden group">
                 <div className="absolute inset-0 bg-linear-to-br from-blue-500/10 to-transparent pointer-events-none" />
                 <div className="relative">
                     <div className="w-24 h-24 border-t-2 border-r-2 border-blue-500 rounded-full animate-spin absolute -inset-2 opacity-30" />
