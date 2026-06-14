@@ -47,7 +47,7 @@ export default function AttendanceCard({
                 </div>
             </div>
 
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
                 {isMarked ? (
                     <span className="inline-flex items-center gap-2 px-4 py-2 bg-green-100 text-green-700 rounded-lg font-semibold text-sm">
                         <CheckCircle className="w-4 h-4" /> Attendance Marked

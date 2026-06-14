@@ -426,7 +426,7 @@ export default function FaceCapture({ studentId, mode = 'verify', onVerified, on
     if (!modelsLoaded) {
         return (
             <div className="flex flex-col items-center justify-center p-12 bg-slate-900 rounded-3xl border border-slate-800 min-h-[400px] shadow-2xl relative overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent pointer-events-none" />
+                <div className="absolute inset-0 bg-linear-to-br from-blue-500/10 to-transparent pointer-events-none" />
                 <div className="relative">
                     <div className="w-24 h-24 border-t-2 border-r-2 border-blue-500 rounded-full animate-spin absolute -inset-2 opacity-30" />
                     <Loader2 className="w-12 h-12 text-blue-400 animate-spin" />
@@ -447,7 +447,7 @@ export default function FaceCapture({ studentId, mode = 'verify', onVerified, on
         <div className="space-y-6">
             {status === 'idle' && (
                 <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 text-center relative overflow-hidden group">
-                    <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-50" />
+                    <div className="absolute top-0 inset-x-0 h-1 bg-linear-to-r from-transparent via-blue-500 to-transparent opacity-50" />
                     <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-6 transform group-hover:rotate-12 transition-transform duration-500">
                         <Camera className="w-8 h-8 text-blue-600" />
                     </div>
@@ -496,7 +496,7 @@ export default function FaceCapture({ studentId, mode = 'verify', onVerified, on
                             <div className={`absolute -bottom-1 -right-1 w-12 h-12 border-b-4 border-r-4 transition-colors duration-300 ${faceDetected ? 'border-blue-500' : 'border-slate-700'} rounded-br-xl`} />
                             
                             {status === 'streaming' && (
-                                <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-blue-400 to-transparent shadow-[0_0_20px_rgba(96,165,250,0.8)] animate-[scan_2.5s_ease-in-out_infinite]" />
+                                <div className="absolute inset-x-0 h-1 bg-linear-to-r from-transparent via-blue-400 to-transparent shadow-[0_0_20px_rgba(96,165,250,0.8)] animate-[scan_2.5s_ease-in-out_infinite]" />
                             )}
                         </div>
 
@@ -509,7 +509,7 @@ export default function FaceCapture({ studentId, mode = 'verify', onVerified, on
                         </div>
 
                         <div className="absolute top-6 left-0 right-0 flex justify-center">
-                            <div className={`px-4 py-2 backdrop-blur-xl rounded-2xl border transition-all duration-500 flex items-center gap-3 ${faceDetected ? 'bg-blue-500/20 border-blue-400/30 -translate-y-0 opacity-100' : 'bg-slate-900/40 border-white/10 -translate-y-2 opacity-0'}`}>
+                            <div className={`px-4 py-2 backdrop-blur-xl rounded-2xl border transition-all duration-500 flex items-center gap-3 ${faceDetected ? 'bg-blue-500/20 border-blue-400/30 translate-y-0 opacity-100' : 'bg-slate-900/40 border-white/10 -translate-y-2 opacity-0'}`}>
                                 <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
                                 <span className="text-[10px] font-black text-white tracking-[0.2em] uppercase">
                                     Biometric Lock Engaged
@@ -595,7 +595,7 @@ export default function FaceCapture({ studentId, mode = 'verify', onVerified, on
                             {isEnroll ? 'REGISTER IDENTITY' : 'VERIFY BIOMETRICS'}
                         </span>
                         {faceDetected && (
-                            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="absolute inset-0 bg-linear-to-r from-blue-600 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity" />
                         )}
                     </button>
                     {onCancel && (

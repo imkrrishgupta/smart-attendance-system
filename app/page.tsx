@@ -445,7 +445,7 @@ export default function HomePage() {
             <div className="relative rounded-3xl overflow-hidden bg-indigo-600 px-12 py-20 text-center shadow-2xl shadow-indigo-300">
               <div className="absolute -top-20 -right-20 w-72 h-72 bg-indigo-500 rounded-full opacity-50" />
               <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-indigo-700 rounded-full opacity-40" />
-              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+              <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-white/30 to-transparent" />
 
               <div className="relative z-10">
                 <h2 className="text-5xl font-extrabold text-white mb-5 tracking-tight leading-tight">
